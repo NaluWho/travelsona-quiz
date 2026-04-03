@@ -24,6 +24,21 @@ After making changes, rebuild project:
 npm run build
 ```
 
+## Deploy To GitHub Pages
+
+This repo is configured to deploy automatically with GitHub Actions when code is pushed to `main`.
+
+One-time setup in GitHub:
+
+1. Go to your repository `Settings` -> `Pages`.
+2. Under `Build and deployment`, set `Source` to `GitHub Actions`.
+
+After that, each push to `main` will publish the site.
+
+Expected URL:
+
+- `https://naluwho.github.io/travelsona-quiz/`
+
 ## Stack
 
 - React 19 + TypeScript
