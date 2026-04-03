@@ -1,0 +1,5 @@
+- Follow the existing Travelsona architecture in `src/data`, `src/utils`, and `src/components`.
+- Keep trait score outputs on the valid set: `-6, -4, -2, 0, 2, 4, 6`.
+- Do not introduce auth/login features unless explicitly requested.
+- Preserve share-by-code / share-by-URL behavior without storing user data server-side.
+- When editing quiz content, update `src/data/questions.ts` and `src/data/traits.ts` first.
