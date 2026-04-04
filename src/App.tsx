@@ -12,6 +12,7 @@ function App() {
     const code = new URL(window.location.href).searchParams.get('r')
     return code ? decodeScores(code) : null
   })
+  const [copiedField, setCopiedField] = useState<string | null>(null)
 
   const shareCode = useMemo(() => (result ? encodeScores(result) : ''), [result])
   const shareUrl = useMemo(() => {
@@ -35,10 +36,12 @@ function App() {
     window.history.replaceState({}, '', url)
   }
 
-  function copyText(value: string) {
+  function copyText(value: string, field: string) {
     navigator.clipboard.writeText(value).catch(() => {
       window.prompt('Copy this value:', value)
     })
+    setCopiedField(field)
+    setTimeout(() => setCopiedField(null), 2000)
   }
 
   function retakeQuiz() {
@@ -85,10 +88,14 @@ function App() {
                 />
                 <button
                   type="button"
-                  onClick={() => copyText(shareCode)}
-                  className="rounded-xl bg-stone-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white"
+                  onClick={() => copyText(shareCode, 'code')}
+                  className={`rounded-xl flex items-center justify-center min-w-[75px] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                    copiedField === 'code'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-stone-900 text-white hover:bg-stone-800'
+                  }`}
                 >
-                  Copy
+                  {copiedField === 'code' ? '✓ Copied' : 'Copy'}
                 </button>
               </div>
 
@@ -101,10 +108,14 @@ function App() {
                 />
                 <button
                   type="button"
-                  onClick={() => copyText(shareUrl)}
-                  className="rounded-xl bg-stone-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white"
+                  onClick={() => copyText(shareUrl, 'url')}
+                  className={`rounded-xl flex items-center justify-center min-w-[75px] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                    copiedField === 'url'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-stone-900 text-white hover:bg-stone-800'
+                  }`}
                 >
-                  Copy
+                  {copiedField === 'url' ? '✓ Copied' : 'Copy'}
                 </button>
               </div>
 
