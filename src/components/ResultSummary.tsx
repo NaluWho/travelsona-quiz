@@ -1,14 +1,17 @@
 import { interestMap } from '../data/interests'
+import { motivationMap } from '../data/motivations'
 import { traitDefinitions, traitMap } from '../data/traits'
-import type { InterestKey, TraitScores } from '../types/quiz'
+import type { InterestKey, MotivationKey, TraitScores } from '../types/quiz'
 import { buildSummaryTitle, getTraitArchetype } from '../utils/scoring'
 
 type ResultSummaryProps = {
   scores: TraitScores
   interests: InterestKey[]
+  motivations: MotivationKey[]
+  primaryMotivation: MotivationKey | null
 }
 
-export function ResultSummary({ scores, interests }: ResultSummaryProps) {
+export function ResultSummary({ scores, interests, motivations, primaryMotivation }: ResultSummaryProps) {
   const title = buildSummaryTitle(scores)
 
   return (
@@ -46,6 +49,27 @@ export function ResultSummary({ scores, interests }: ResultSummaryProps) {
               className="inline-flex items-center rounded-full border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-teal-800"
             >
               {interestMap[interest].label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Travel Motivation</p>
+          {primaryMotivation && (
+            <span className="rounded-full bg-teal-700 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white">
+              #1 {motivationMap[primaryMotivation].label}
+            </span>
+          )}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {motivations.map((motivation) => (
+            <span
+              key={motivation}
+              className="inline-flex items-center rounded-full border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-teal-800"
+            >
+              {motivationMap[motivation].label}
             </span>
           ))}
         </div>

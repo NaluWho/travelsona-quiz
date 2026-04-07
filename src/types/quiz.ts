@@ -47,7 +47,22 @@ export type InterestDefinition = {
   description: string
 }
 
+export type MotivationKey =
+  | 'restoration'
+  | 'education'
+  | 'statusSocial'
+  | 'escapism'
+  | 'challenge'
+
+export type MotivationDefinition = {
+  key: MotivationKey
+  label: string
+  description: string
+}
+
 export type QuizResult = {
   scores: TraitScores
   interests: InterestKey[]
+  motivations: MotivationKey[]
+  primaryMotivation: MotivationKey | null
 }

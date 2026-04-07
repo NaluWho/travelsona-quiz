@@ -1,4 +1,4 @@
-import type { InterestKey, TraitKey, TraitScores } from '../types/quiz'
+import type { InterestKey, MotivationKey, TraitKey, TraitScores } from '../types/quiz'
 
 const SAME_DIRECTION_TRAITS: TraitKey[] = [
   'structure',
@@ -10,9 +10,11 @@ const SAME_DIRECTION_TRAITS: TraitKey[] = [
   'social',
 ]
 
-const PERSONALITY_WEIGHT = 0.85
+const PERSONALITY_WEIGHT = 0.6
 const INTEREST_WEIGHT = 0.15
+const MOTIVATION_WEIGHT = 0.25
 const MAX_INTEREST_OVERLAP = 5
+const MAX_MOTIVATION_SIGNAL_POINTS = 180
 
 function clampPercentage(value: number): number {
   return Math.max(4, Math.min(100, value))
@@ -33,11 +35,46 @@ function getOverlap(a: InterestKey[], b: InterestKey[]): InterestKey[] {
   return a.filter((interest, index) => a.indexOf(interest) === index && bSet.has(interest))
 }
 
+function getMotivationOverlap(a: MotivationKey[], b: MotivationKey[]): MotivationKey[] {
+  const bSet = new Set(b)
+  return a.filter((motivation, index) => a.indexOf(motivation) === index && bSet.has(motivation))
+}
+
+function calculateMotivationScore(
+  aMotivations: MotivationKey[],
+  bMotivations: MotivationKey[],
+  aPrimary: MotivationKey | null,
+  bPrimary: MotivationKey | null,
+): { motivationScore: number; sharedMotivations: MotivationKey[]; topSignalPoints: number } {
+  const sharedMotivations = getMotivationOverlap(aMotivations, bMotivations)
+  const unionSize = new Set([...aMotivations, ...bMotivations]).size
+  const sharedPercent = unionSize === 0 ? 0 : Math.round((sharedMotivations.length / unionSize) * 100)
+
+  let topSignalPoints = 0
+  if (aPrimary && bPrimary && aPrimary === bPrimary) {
+    topSignalPoints += 100
+  }
+  if (aPrimary && bMotivations.includes(aPrimary)) {
+    topSignalPoints += 40
+  }
+  if (bPrimary && aMotivations.includes(bPrimary)) {
+    topSignalPoints += 40
+  }
+
+  const topSignalPercent = Math.round((topSignalPoints / MAX_MOTIVATION_SIGNAL_POINTS) * 100)
+  const motivationScore = Math.round((sharedPercent * 0.6) + (topSignalPercent * 0.4))
+
+  return { motivationScore, sharedMotivations, topSignalPoints }
+}
+
 export type CompatibilityResult = {
   overall: number
   personality: number
   interests: number
   overlap: InterestKey[]
+  motivations: number
+  sharedMotivations: MotivationKey[]
+  topSignalPoints: number
 }
 
 export function calculateCompatibility(
@@ -45,16 +82,29 @@ export function calculateCompatibility(
   b: TraitScores,
   aInterests: InterestKey[],
   bInterests: InterestKey[],
+  aMotivations: MotivationKey[],
+  bMotivations: MotivationKey[],
+  aPrimaryMotivation: MotivationKey | null,
+  bPrimaryMotivation: MotivationKey | null,
 ): CompatibilityResult {
   const personality = calculatePersonalityScore(a, b)
   const overlap = getOverlap(aInterests, bInterests)
   const interests = Math.round((overlap.length / MAX_INTEREST_OVERLAP) * 100)
-  const overall = clampPercentage(Math.round((personality * PERSONALITY_WEIGHT) + (interests * INTEREST_WEIGHT)))
+  const { motivationScore, sharedMotivations, topSignalPoints } = calculateMotivationScore(
+    aMotivations,
+    bMotivations,
+    aPrimaryMotivation,
+    bPrimaryMotivation,
+  )
+  const overall = clampPercentage(Math.round((personality * PERSONALITY_WEIGHT) + (interests * INTEREST_WEIGHT) + (motivationScore * MOTIVATION_WEIGHT)))
 
   return {
     overall,
     personality,
     interests,
     overlap,
+    motivations: motivationScore,
+    sharedMotivations,
+    topSignalPoints,
   }
 }

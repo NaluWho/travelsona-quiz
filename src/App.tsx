@@ -3,12 +3,14 @@ import { CompatibilityChecker } from './components/CompatibilityChecker'
 import { QuizView } from './components/QuizView'
 import { ResultSummary } from './components/ResultSummary'
 import { TraitRadarChart } from './components/TraitRadarChart'
-import type { InterestKey, QuizResult } from './types/quiz'
+import type { InterestKey, MotivationKey, QuizResult } from './types/quiz'
 import { decodeResult, encodeResult } from './utils/encoding'
 
 function App() {
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [interests, setInterests] = useState<InterestKey[]>([])
+  const [motivations, setMotivations] = useState<MotivationKey[]>([])
+  const [primaryMotivation, setPrimaryMotivation] = useState<MotivationKey | null>(null)
   const [result, setResult] = useState<QuizResult | null>(() => {
     const code = new URL(window.location.href).searchParams.get('r')
     return code ? decodeResult(code) : null
@@ -48,6 +50,8 @@ function App() {
   function retakeQuiz() {
     setAnswers({})
     setInterests([])
+    setMotivations([])
+    setPrimaryMotivation(null)
     setResult(null)
     const url = new URL(window.location.href)
     url.searchParams.delete('r')
@@ -68,15 +72,24 @@ function App() {
         <QuizView
           answers={answers}
           selectedInterests={interests}
+          selectedMotivations={motivations}
+          primaryMotivation={primaryMotivation}
           onAnswer={setAnswer}
           onInterestsChange={setInterests}
+          onMotivationsChange={setMotivations}
+          onPrimaryMotivationChange={setPrimaryMotivation}
           onFinished={handleFinished}
         />
       )}
 
       {result && (
         <section className="space-y-6">
-          <ResultSummary scores={result.scores} interests={result.interests} />
+          <ResultSummary
+            scores={result.scores}
+            interests={result.interests}
+            motivations={result.motivations}
+            primaryMotivation={result.primaryMotivation}
+          />
 
           <section className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
             <TraitRadarChart scores={result.scores} />
@@ -84,7 +97,7 @@ function App() {
             <aside className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
               <h3 className="text-xl font-bold text-stone-900">Share Result</h3>
               <p className="mt-2 text-sm text-stone-600">
-                This app does not store personal data. Your trait scores and interests are encoded in this share value.
+                This app does not store personal data. Your traits, interests, and motivations are encoded in this share value.
               </p>
 
               <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Share Code</label>

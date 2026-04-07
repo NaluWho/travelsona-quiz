@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { interestMap } from '../data/interests'
+import { motivationMap } from '../data/motivations'
 import { TraitRadarChart } from './TraitRadarChart'
 import { traitDefinitions } from '../data/traits'
 import type { QuizResult, TraitScores } from '../types/quiz'
@@ -24,8 +25,23 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
       return null
     }
 
-    return calculateCompatibility(myScores, otherResult.scores, myResult.interests, otherResult.interests)
-  }, [myResult.interests, myScores, otherResult])
+    return calculateCompatibility(
+      myScores,
+      otherResult.scores,
+      myResult.interests,
+      otherResult.interests,
+      myResult.motivations,
+      otherResult.motivations,
+      myResult.primaryMotivation,
+      otherResult.primaryMotivation,
+    )
+  }, [
+    myResult.interests,
+    myResult.motivations,
+    myResult.primaryMotivation,
+    myScores,
+    otherResult,
+  ])
 
   function handleCompare() {
     const code = extractCode(input)
@@ -45,7 +61,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
     <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
       <h3 className="text-xl font-bold text-stone-900">Compatibility Check</h3>
       <p className="mt-2 text-sm text-stone-600">
-        Paste your friend&apos;s result URL or share code. Overall score uses 85% personality + 15% interest overlap.
+        Paste your friend&apos;s result URL or share code. Overall score uses 60% personality, 15% interests, and 25% motivations.
       </p>
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
@@ -72,7 +88,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Match Score</p>
             <p className="text-4xl font-black text-teal-900">{compatibility.overall}%</p>
             <p className="mt-2 text-xs text-teal-800">
-              Personality: {compatibility.personality}% • Interests: {compatibility.interests}%
+              Personality: {compatibility.personality}% • Interests: {compatibility.interests}% • Motivations: {compatibility.motivations}%
             </p>
           </div>
 
@@ -93,6 +109,31 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
                 <span className="text-sm text-stone-500">No overlap yet.</span>
               )}
             </div>
+          </div>
+
+          <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Travel Motivation Match</p>
+            <p className="mt-1 text-sm text-stone-600">
+              {compatibility.sharedMotivations.length} shared motivations • Top-signal points: {compatibility.topSignalPoints}/180
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {compatibility.sharedMotivations.length > 0 ? (
+                compatibility.sharedMotivations.map((motivation) => (
+                  <span
+                    key={motivation}
+                    className="inline-flex items-center rounded-full border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-teal-800"
+                  >
+                    {motivationMap[motivation].label}
+                  </span>
+                ))
+              ) : (
+                <span className="text-sm text-stone-500">No shared motivations yet.</span>
+              )}
+            </div>
+
+            <p className="mt-3 text-xs text-stone-600">
+              Your #1: {myResult.primaryMotivation ? motivationMap[myResult.primaryMotivation].label : 'Not set'} | Friend #1: {otherResult.primaryMotivation ? motivationMap[otherResult.primaryMotivation].label : 'Not set'}
+            </p>
           </div>
 
           <div>
