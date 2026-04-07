@@ -13,7 +13,6 @@ const SAME_DIRECTION_TRAITS: TraitKey[] = [
 const PERSONALITY_WEIGHT = 0.6
 const INTEREST_WEIGHT = 0.15
 const MOTIVATION_WEIGHT = 0.25
-const MAX_INTEREST_OVERLAP = 5
 const MAX_MOTIVATION_SIGNAL_POINTS = 180
 
 function clampPercentage(value: number): number {
@@ -33,6 +32,13 @@ function calculatePersonalityScore(a: TraitScores, b: TraitScores): number {
 function getOverlap(a: InterestKey[], b: InterestKey[]): InterestKey[] {
   const bSet = new Set(b)
   return a.filter((interest, index) => a.indexOf(interest) === index && bSet.has(interest))
+}
+
+function calculateInterestScore(a: InterestKey[], b: InterestKey[]): { score: number; overlap: InterestKey[] } {
+  const overlap = getOverlap(a, b)
+  const unionSize = new Set([...a, ...b]).size
+  const score = unionSize === 0 ? 0 : Math.round((overlap.length / unionSize) * 100)
+  return { score, overlap }
 }
 
 function getMotivationOverlap(a: MotivationKey[], b: MotivationKey[]): MotivationKey[] {
@@ -88,8 +94,7 @@ export function calculateCompatibility(
   bPrimaryMotivation: MotivationKey | null,
 ): CompatibilityResult {
   const personality = calculatePersonalityScore(a, b)
-  const overlap = getOverlap(aInterests, bInterests)
-  const interests = Math.round((overlap.length / MAX_INTEREST_OVERLAP) * 100)
+  const { score: interests, overlap } = calculateInterestScore(aInterests, bInterests)
   const { motivationScore, sharedMotivations, topSignalPoints } = calculateMotivationScore(
     aMotivations,
     bMotivations,
