@@ -36,8 +36,8 @@ function getOverlap(a: InterestKey[], b: InterestKey[]): InterestKey[] {
 
 function calculateInterestScore(a: InterestKey[], b: InterestKey[]): { score: number; overlap: InterestKey[] } {
   const overlap = getOverlap(a, b)
-  const unionSize = new Set([...a, ...b]).size
-  const score = unionSize === 0 ? 0 : Math.round((overlap.length / unionSize) * 100)
+  const totalSelections = a.length + b.length
+  const score = totalSelections === 0 ? 0 : Math.round(((overlap.length * 2) / totalSelections) * 100)
   return { score, overlap }
 }
 
