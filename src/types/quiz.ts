@@ -50,8 +50,9 @@ export type InterestDefinition = {
 export type MotivationKey =
   | 'restoration'
   | 'education'
-  | 'statusSocial'
+  | 'socialMedia'
   | 'escapism'
+  | 'community'
   | 'challenge'
 
 export type MotivationDefinition = {
