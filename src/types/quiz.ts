@@ -30,3 +30,24 @@ export type QuizQuestion = {
 }
 
 export type TraitScores = Record<TraitKey, number>
+
+export type InterestKey =
+  | 'culinary'
+  | 'active'
+  | 'creative'
+  | 'historical'
+  | 'retail'
+  | 'nightlife'
+  | 'wellness'
+  | 'nature'
+
+export type InterestDefinition = {
+  key: InterestKey
+  label: string
+  description: string
+}
+
+export type QuizResult = {
+  scores: TraitScores
+  interests: InterestKey[]
+}

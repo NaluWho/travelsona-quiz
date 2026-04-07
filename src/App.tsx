@@ -3,18 +3,19 @@ import { CompatibilityChecker } from './components/CompatibilityChecker'
 import { QuizView } from './components/QuizView'
 import { ResultSummary } from './components/ResultSummary'
 import { TraitRadarChart } from './components/TraitRadarChart'
-import type { TraitScores } from './types/quiz'
-import { decodeScores, encodeScores } from './utils/encoding'
+import type { InterestKey, QuizResult } from './types/quiz'
+import { decodeResult, encodeResult } from './utils/encoding'
 
 function App() {
   const [answers, setAnswers] = useState<Record<number, number>>({})
-  const [result, setResult] = useState<TraitScores | null>(() => {
+  const [interests, setInterests] = useState<InterestKey[]>([])
+  const [result, setResult] = useState<QuizResult | null>(() => {
     const code = new URL(window.location.href).searchParams.get('r')
-    return code ? decodeScores(code) : null
+    return code ? decodeResult(code) : null
   })
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
-  const shareCode = useMemo(() => (result ? encodeScores(result) : ''), [result])
+  const shareCode = useMemo(() => (result ? encodeResult(result) : ''), [result])
   const shareUrl = useMemo(() => {
     if (!shareCode) {
       return ''
@@ -28,9 +29,9 @@ function App() {
     setAnswers((current) => ({ ...current, [questionId]: score }))
   }
 
-  function handleFinished(scores: TraitScores) {
-    setResult(scores)
-    const code = encodeScores(scores)
+  function handleFinished(nextResult: QuizResult) {
+    setResult(nextResult)
+    const code = encodeResult(nextResult)
     const url = new URL(window.location.href)
     url.searchParams.set('r', code)
     window.history.replaceState({}, '', url)
@@ -46,6 +47,7 @@ function App() {
 
   function retakeQuiz() {
     setAnswers({})
+    setInterests([])
     setResult(null)
     const url = new URL(window.location.href)
     url.searchParams.delete('r')
@@ -63,20 +65,26 @@ function App() {
       </header>
 
       {!result && (
-        <QuizView answers={answers} onAnswer={setAnswer} onFinished={handleFinished} />
+        <QuizView
+          answers={answers}
+          selectedInterests={interests}
+          onAnswer={setAnswer}
+          onInterestsChange={setInterests}
+          onFinished={handleFinished}
+        />
       )}
 
       {result && (
         <section className="space-y-6">
-          <ResultSummary scores={result} />
+          <ResultSummary scores={result.scores} interests={result.interests} />
 
           <section className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-            <TraitRadarChart scores={result} />
+            <TraitRadarChart scores={result.scores} />
 
             <aside className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
               <h3 className="text-xl font-bold text-stone-900">Share Result</h3>
               <p className="mt-2 text-sm text-stone-600">
-                This app does not store personal data. Your scores are encoded in this share value.
+                This app does not store personal data. Your trait scores and interests are encoded in this share value.
               </p>
 
               <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Share Code</label>
@@ -129,7 +137,7 @@ function App() {
             </aside>
           </section>
 
-          <CompatibilityChecker myScores={result} />
+          <CompatibilityChecker myResult={result} />
         </section>
       )}
     </main>

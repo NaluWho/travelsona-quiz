@@ -1,12 +1,14 @@
+import { interestMap } from '../data/interests'
 import { traitDefinitions, traitMap } from '../data/traits'
-import type { TraitScores } from '../types/quiz'
+import type { InterestKey, TraitScores } from '../types/quiz'
 import { buildSummaryTitle, getTraitArchetype } from '../utils/scoring'
 
 type ResultSummaryProps = {
   scores: TraitScores
+  interests: InterestKey[]
 }
 
-export function ResultSummary({ scores }: ResultSummaryProps) {
+export function ResultSummary({ scores, interests }: ResultSummaryProps) {
   const title = buildSummaryTitle(scores)
 
   return (
@@ -33,6 +35,20 @@ export function ResultSummary({ scores }: ResultSummaryProps) {
             </article>
           )
         })}
+      </div>
+
+      <div className="mt-6 rounded-xl border border-stone-200 bg-stone-50 p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Travel Interests</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {interests.map((interest) => (
+            <span
+              key={interest}
+              className="inline-flex items-center rounded-full border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-teal-800"
+            >
+              {interestMap[interest].label}
+            </span>
+          ))}
+        </div>
       </div>
     </section>
   )
