@@ -30,6 +30,8 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
       otherResult.scores,
       myResult.interests,
       otherResult.interests,
+      myResult.disinterests,
+      otherResult.disinterests,
       myResult.motivations,
       otherResult.motivations,
       myResult.primaryMotivation,
@@ -37,6 +39,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
     )
   }, [
     myResult.interests,
+    myResult.disinterests,
     myResult.motivations,
     myResult.primaryMotivation,
     myScores,
@@ -61,7 +64,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
     <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
       <h3 className="text-xl font-bold text-stone-900">Compatibility Check</h3>
       <p className="mt-2 text-sm text-stone-600">
-        Paste your friend&apos;s result URL or share code. Overall score uses 60% personality, 15% interests, and 25% motivations.
+        Paste your friend&apos;s result URL or share code. Overall score uses 50% personality, 20% interests (shared + friction), and 30% motivations.
       </p>
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
@@ -94,7 +97,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
 
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Shared Interests</p>
-            <p className="mt-1 text-sm text-stone-600">{compatibility.overlap.length} overlapping interests</p>
+            <p className="mt-1 text-sm text-stone-600">{compatibility.overlap.length} overlapping interests (Friction Score: {compatibility.frictionScore}%)</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {compatibility.overlap.length > 0 ? (
                 compatibility.overlap.map((interest) => (
@@ -106,15 +109,33 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
                   </span>
                 ))
               ) : (
-                <span className="text-sm text-stone-500">No overlap yet.</span>
+                <span className="text-sm text-stone-500">No overlapping interests.</span>
               )}
             </div>
+
+            {(myResult.disinterests.length > 0 || otherResult.disinterests.length > 0) && (
+              <div className="mt-3 rounded-lg border border-stone-200 bg-white p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Interest Friction</p>
+                <p className="mt-2 text-xs text-stone-600">
+                  {myResult.disinterests.length > 0 && (
+                    <span className="block">
+                      You avoid: {myResult.disinterests.map((d) => interestMap[d].label).join(', ')}
+                    </span>
+                  )}
+                  {otherResult.disinterests.length > 0 && (
+                    <span className="block">
+                      They avoid: {otherResult.disinterests.map((d) => interestMap[d].label).join(', ')}
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Travel Motivation Match</p>
             <p className="mt-1 text-sm text-stone-600">
-              {compatibility.sharedMotivations.length} shared motivations • Top-signal points: {compatibility.topSignalPoints}/100
+              {compatibility.sharedMotivations.length} shared motivations • Top Motivation Similarity: {compatibility.topSignalPoints}/100
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {compatibility.sharedMotivations.length > 0 ? (

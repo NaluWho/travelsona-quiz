@@ -7,11 +7,12 @@ import { buildSummaryTitle, getTraitArchetype } from '../utils/scoring'
 type ResultSummaryProps = {
   scores: TraitScores
   interests: InterestKey[]
+  disinterests: InterestKey[]
   motivations: MotivationKey[]
   primaryMotivation: MotivationKey | null
 }
 
-export function ResultSummary({ scores, interests, motivations, primaryMotivation }: ResultSummaryProps) {
+export function ResultSummary({ scores, interests, disinterests, motivations, primaryMotivation }: ResultSummaryProps) {
   const title = buildSummaryTitle(scores)
 
   return (
@@ -53,6 +54,22 @@ export function ResultSummary({ scores, interests, motivations, primaryMotivatio
           ))}
         </div>
       </div>
+
+      {disinterests.length > 0 && (
+        <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Activities to Avoid</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {disinterests.map((disinterest) => (
+              <span
+                key={disinterest}
+                className="inline-flex items-center rounded-full border border-rose-300 bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-rose-800"
+              >
+                {interestMap[disinterest].label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
         <div className="flex items-center justify-between gap-2">

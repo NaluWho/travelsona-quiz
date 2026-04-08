@@ -8,10 +8,12 @@ import { scoreQuiz } from '../utils/scoring'
 type QuizViewProps = {
   answers: Record<number, number>
   selectedInterests: InterestKey[]
+  selectedDisinterests: InterestKey[]
   selectedMotivations: MotivationKey[]
   primaryMotivation: MotivationKey | null
   onAnswer: (questionId: number, score: number) => void
   onInterestsChange: (interests: InterestKey[]) => void
+  onDisinterestsChange: (disinterests: InterestKey[]) => void
   onMotivationsChange: (motivations: MotivationKey[]) => void
   onPrimaryMotivationChange: (motivation: MotivationKey | null) => void
   onFinished: (result: QuizResult) => void
@@ -20,10 +22,12 @@ type QuizViewProps = {
 export function QuizView({
   answers,
   selectedInterests,
+  selectedDisinterests,
   selectedMotivations,
   primaryMotivation,
   onAnswer,
   onInterestsChange,
+  onDisinterestsChange,
   onMotivationsChange,
   onPrimaryMotivationChange,
   onFinished,
@@ -52,6 +56,19 @@ export function QuizView({
     }
 
     onInterestsChange([...selectedInterests, interest])
+  }
+
+  function toggleDisinterest(interest: InterestKey) {
+    if (selectedDisinterests.includes(interest)) {
+      onDisinterestsChange(selectedDisinterests.filter((item) => item !== interest))
+      return
+    }
+
+    if (selectedDisinterests.length >= 5) {
+      return
+    }
+
+    onDisinterestsChange([...selectedDisinterests, interest])
   }
 
   function toggleMotivation(motivation: MotivationKey) {
@@ -85,6 +102,7 @@ export function QuizView({
     onFinished({
       scores,
       interests: selectedInterests,
+      disinterests: selectedDisinterests,
       motivations: selectedMotivations,
       primaryMotivation: selectedMotivations.length === 1 ? selectedMotivations[0] : primaryMotivation,
     })
@@ -157,6 +175,38 @@ export function QuizView({
         {!validInterests && (
           <p className="mt-3 text-sm font-medium text-rose-700">Pick at least 3 interests (maximum 5).</p>
         )}
+      </article>
+
+      <article className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-teal-700">Section 2 (Optional)</p>
+        <h2 className="mt-2 text-lg font-semibold text-stone-900">What activities would you rather avoid while traveling?</h2>
+        <p className="mt-2 text-sm text-stone-600">Select 0 to 5 options (optional).</p>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {travelInterests.map((interest) => {
+            const selected = selectedDisinterests.includes(interest.key)
+            const disabled = !selected && selectedDisinterests.length >= 5
+
+            return (
+              <button
+                key={interest.key}
+                type="button"
+                disabled={disabled}
+                onClick={() => toggleDisinterest(interest.key)}
+                className={`rounded-xl border px-4 py-3 text-left transition ${
+                  selected
+                    ? 'border-rose-700 bg-rose-50 text-rose-900'
+                    : disabled
+                      ? 'cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400'
+                      : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-rose-400 hover:bg-rose-50/60'
+                }`}
+              >
+                <p className="font-semibold">{interest.label}</p>
+                <p className="mt-1 text-sm">{interest.description}</p>
+              </button>
+            )
+          })}
+        </div>
       </article>
 
       <article className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">

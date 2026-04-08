@@ -64,6 +64,7 @@ export type MotivationDefinition = {
 export type QuizResult = {
   scores: TraitScores
   interests: InterestKey[]
+  disinterests: InterestKey[]
   motivations: MotivationKey[]
   primaryMotivation: MotivationKey | null
 }

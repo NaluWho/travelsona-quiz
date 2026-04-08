@@ -6,7 +6,8 @@ import { normalizeTraitScore } from './scoring'
 
 const LEGACY_VERSION_PREFIX = 'v1:'
 const INTERESTS_VERSION_PREFIX = 'v2:'
-const VERSION_PREFIX = 'v3:'
+const MOTIVATIONS_VERSION_PREFIX = 'v3:'
+const VERSION_PREFIX = 'v4:'
 const INTEREST_KEYS = new Set<InterestKey>(travelInterests.map((interest) => interest.key))
 const MOTIVATION_KEYS = new Set<MotivationKey>(travelMotivations.map((motivation) => motivation.key))
 
@@ -26,6 +27,9 @@ export function encodeResult(result: QuizResult): string {
   const orderedInterests = travelInterests
     .map((interest) => interest.key)
     .filter((interest) => result.interests.includes(interest))
+  const orderedDisinterests = travelInterests
+    .map((interest) => interest.key)
+    .filter((interest) => result.disinterests.includes(interest))
   const orderedMotivations = travelMotivations
     .map((motivation) => motivation.key)
     .filter((motivation) => result.motivations.includes(motivation))
@@ -33,7 +37,7 @@ export function encodeResult(result: QuizResult): string {
     ? result.primaryMotivation
     : ''
 
-  return toBase64Url(`${VERSION_PREFIX}${orderedScores.join(',')}|${orderedInterests.join(',')}|${orderedMotivations.join(',')}|${encodedPrimary}`)
+  return toBase64Url(`${VERSION_PREFIX}${orderedScores.join(',')}|${orderedInterests.join(',')}|${orderedDisinterests.join(',')}|${orderedMotivations.join(',')}|${encodedPrimary}`)
 }
 
 function decodeLegacyScores(decoded: string): QuizResult | null {
@@ -51,7 +55,7 @@ function decodeLegacyScores(decoded: string): QuizResult | null {
     scores[trait.key] = normalizeTraitScore(rawNumbers[index])
   })
 
-  return { scores, interests: [], motivations: [], primaryMotivation: null }
+  return { scores, interests: [], disinterests: [], motivations: [], primaryMotivation: null }
 }
 
 function decodeInterestsVersion(decoded: string): QuizResult | null {
@@ -77,7 +81,7 @@ function decodeInterestsVersion(decoded: string): QuizResult | null {
 
   const uniqueInterests = interests.filter((entry, index) => interests.indexOf(entry) === index)
 
-  return { scores, interests: uniqueInterests, motivations: [], primaryMotivation: null }
+  return { scores, interests: uniqueInterests, disinterests: [], motivations: [], primaryMotivation: null }
 }
 
 export function decodeResult(encoded: string): QuizResult | null {
@@ -92,11 +96,44 @@ export function decodeResult(encoded: string): QuizResult | null {
       return decodeInterestsVersion(decoded)
     }
 
+    if (decoded.startsWith(MOTIVATIONS_VERSION_PREFIX)) {
+      const [rawScores, rawInterests = '', rawMotivations = '', rawPrimary = ''] = decoded.slice(MOTIVATIONS_VERSION_PREFIX.length).split('|')
+      const rawNumbers = rawScores.split(',').map(Number)
+      if (rawNumbers.length !== traitDefinitions.length || rawNumbers.some(Number.isNaN)) {
+        return null
+      }
+
+      const scores = {} as TraitScores
+      traitDefinitions.forEach((trait, index) => {
+        scores[trait.key] = normalizeTraitScore(rawNumbers[index])
+      })
+
+      const interests = rawInterests
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter((entry): entry is InterestKey => Boolean(entry) && INTEREST_KEYS.has(entry as InterestKey))
+
+      const uniqueInterests = interests.filter((entry, index) => interests.indexOf(entry) === index)
+      const motivations = rawMotivations
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter((entry): entry is MotivationKey => Boolean(entry) && MOTIVATION_KEYS.has(entry as MotivationKey))
+
+      const uniqueMotivations = motivations.filter((entry, index) => motivations.indexOf(entry) === index)
+      const parsedPrimary = rawPrimary.trim()
+      const primaryMotivation =
+        parsedPrimary && MOTIVATION_KEYS.has(parsedPrimary as MotivationKey) && uniqueMotivations.includes(parsedPrimary as MotivationKey)
+          ? (parsedPrimary as MotivationKey)
+          : null
+
+      return { scores, interests: uniqueInterests, disinterests: [], motivations: uniqueMotivations, primaryMotivation }
+    }
+
     if (!decoded.startsWith(VERSION_PREFIX)) {
       return null
     }
 
-    const [rawScores, rawInterests = '', rawMotivations = '', rawPrimary = ''] = decoded.slice(VERSION_PREFIX.length).split('|')
+    const [rawScores, rawInterests = '', rawDisinterests = '', rawMotivations = '', rawPrimary = ''] = decoded.slice(VERSION_PREFIX.length).split('|')
     const rawNumbers = rawScores.split(',').map(Number)
     if (rawNumbers.length !== traitDefinitions.length || rawNumbers.some(Number.isNaN)) {
       return null
@@ -113,6 +150,14 @@ export function decodeResult(encoded: string): QuizResult | null {
       .filter((entry): entry is InterestKey => Boolean(entry) && INTEREST_KEYS.has(entry as InterestKey))
 
     const uniqueInterests = interests.filter((entry, index) => interests.indexOf(entry) === index)
+
+    const disinterests = rawDisinterests
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter((entry): entry is InterestKey => Boolean(entry) && INTEREST_KEYS.has(entry as InterestKey))
+
+    const uniqueDisinterests = disinterests.filter((entry, index) => disinterests.indexOf(entry) === index)
+
     const motivations = rawMotivations
       .split(',')
       .map((entry) => entry.trim())
@@ -125,14 +170,14 @@ export function decodeResult(encoded: string): QuizResult | null {
         ? (parsedPrimary as MotivationKey)
         : null
 
-    return { scores, interests: uniqueInterests, motivations: uniqueMotivations, primaryMotivation }
+    return { scores, interests: uniqueInterests, disinterests: uniqueDisinterests, motivations: uniqueMotivations, primaryMotivation }
   } catch {
     return null
   }
 }
 
 export function encodeScores(scores: TraitScores): string {
-  return encodeResult({ scores, interests: [], motivations: [], primaryMotivation: null })
+  return encodeResult({ scores, interests: [], disinterests: [], motivations: [], primaryMotivation: null })
 }
 
 export function decodeScores(encoded: string): TraitScores | null {

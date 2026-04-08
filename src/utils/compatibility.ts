@@ -10,9 +10,9 @@ const SAME_DIRECTION_TRAITS: TraitKey[] = [
   'social',
 ]
 
-const PERSONALITY_WEIGHT = 0.6
-const INTEREST_WEIGHT = 0.15
-const MOTIVATION_WEIGHT = 0.25
+const PERSONALITY_WEIGHT = 0.5
+const INTEREST_WEIGHT = 0.2
+const MOTIVATION_WEIGHT = 0.3
 const MAX_MOTIVATION_SIGNAL_POINTS = 100
 
 function clampPercentage(value: number): number {
@@ -34,11 +34,24 @@ function getOverlap(a: InterestKey[], b: InterestKey[]): InterestKey[] {
   return a.filter((interest, index) => a.indexOf(interest) === index && bSet.has(interest))
 }
 
-function calculateInterestScore(a: InterestKey[], b: InterestKey[]): { score: number; overlap: InterestKey[] } {
+function calculateInterestScore(a: InterestKey[], b: InterestKey[], aDisinterests: InterestKey[], bDisinterests: InterestKey[]): { score: number; overlap: InterestKey[]; frictionScore: number } {
   const overlap = getOverlap(a, b)
   const totalSelections = a.length + b.length
-  const score = totalSelections === 0 ? 0 : Math.round(((overlap.length * 2) / totalSelections) * 100)
-  return { score, overlap }
+  const commonScore = totalSelections === 0 ? 0 : Math.round(((overlap.length * 2) / totalSelections) * 100)
+
+  // Calculate friction: how many of each person's interests are disliked by the other
+  const aFrictionCount = a.filter((interest) => bDisinterests.includes(interest)).length
+  const bFrictionCount = b.filter((interest) => aDisinterests.includes(interest)).length
+
+  const aFrictionPercent = a.length === 0 ? 0 : (aFrictionCount / a.length)
+  const bFrictionPercent = b.length === 0 ? 0 : (bFrictionCount / b.length)
+  const avgFrictionPercent = (aFrictionPercent + bFrictionPercent) / 2
+  const frictionScore = Math.round((1 - avgFrictionPercent) * 100)
+
+  // Combined: 50% common interests, 50% friction avoidance
+  const score = Math.round((commonScore * 0.5) + (frictionScore * 0.5))
+
+  return { score, overlap, frictionScore }
 }
 
 function getMotivationOverlap(a: MotivationKey[], b: MotivationKey[]): MotivationKey[] {
@@ -78,6 +91,7 @@ export type CompatibilityResult = {
   personality: number
   interests: number
   overlap: InterestKey[]
+  frictionScore: number
   motivations: number
   sharedMotivations: MotivationKey[]
   topSignalPoints: number
@@ -88,13 +102,15 @@ export function calculateCompatibility(
   b: TraitScores,
   aInterests: InterestKey[],
   bInterests: InterestKey[],
+  aDisinterests: InterestKey[],
+  bDisinterests: InterestKey[],
   aMotivations: MotivationKey[],
   bMotivations: MotivationKey[],
   aPrimaryMotivation: MotivationKey | null,
   bPrimaryMotivation: MotivationKey | null,
 ): CompatibilityResult {
   const personality = calculatePersonalityScore(a, b)
-  const { score: interests, overlap } = calculateInterestScore(aInterests, bInterests)
+  const { score: interests, overlap, frictionScore } = calculateInterestScore(aInterests, bInterests, aDisinterests, bDisinterests)
   const { motivationScore, sharedMotivations, topSignalPoints } = calculateMotivationScore(
     aMotivations,
     bMotivations,
@@ -108,6 +124,7 @@ export function calculateCompatibility(
     personality,
     interests,
     overlap,
+    frictionScore,
     motivations: motivationScore,
     sharedMotivations,
     topSignalPoints,

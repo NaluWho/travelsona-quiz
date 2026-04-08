@@ -9,6 +9,7 @@ import { decodeResult, encodeResult } from './utils/encoding'
 function App() {
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [interests, setInterests] = useState<InterestKey[]>([])
+  const [disinterests, setDisinterests] = useState<InterestKey[]>([])
   const [motivations, setMotivations] = useState<MotivationKey[]>([])
   const [primaryMotivation, setPrimaryMotivation] = useState<MotivationKey | null>(null)
   const [result, setResult] = useState<QuizResult | null>(() => {
@@ -50,6 +51,7 @@ function App() {
   function retakeQuiz() {
     setAnswers({})
     setInterests([])
+    setDisinterests([])
     setMotivations([])
     setPrimaryMotivation(null)
     setResult(null)
@@ -72,10 +74,12 @@ function App() {
         <QuizView
           answers={answers}
           selectedInterests={interests}
+          selectedDisinterests={disinterests}
           selectedMotivations={motivations}
           primaryMotivation={primaryMotivation}
           onAnswer={setAnswer}
           onInterestsChange={setInterests}
+          onDisinterestsChange={setDisinterests}
           onMotivationsChange={setMotivations}
           onPrimaryMotivationChange={setPrimaryMotivation}
           onFinished={handleFinished}
@@ -87,6 +91,7 @@ function App() {
           <ResultSummary
             scores={result.scores}
             interests={result.interests}
+            disinterests={result.disinterests}
             motivations={result.motivations}
             primaryMotivation={result.primaryMotivation}
           />
