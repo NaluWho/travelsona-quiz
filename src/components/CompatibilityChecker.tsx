@@ -114,7 +114,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Travel Motivation Match</p>
             <p className="mt-1 text-sm text-stone-600">
-              {compatibility.sharedMotivations.length} shared motivations • Top-signal points: {compatibility.topSignalPoints}/180
+              {compatibility.sharedMotivations.length} shared motivations • Top-signal points: {compatibility.topSignalPoints}/100
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {compatibility.sharedMotivations.length > 0 ? (

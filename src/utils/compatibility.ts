@@ -13,7 +13,7 @@ const SAME_DIRECTION_TRAITS: TraitKey[] = [
 const PERSONALITY_WEIGHT = 0.6
 const INTEREST_WEIGHT = 0.15
 const MOTIVATION_WEIGHT = 0.25
-const MAX_MOTIVATION_SIGNAL_POINTS = 180
+const MAX_MOTIVATION_SIGNAL_POINTS = 100
 
 function clampPercentage(value: number): number {
   return Math.max(4, Math.min(100, value))
@@ -53,18 +53,18 @@ function calculateMotivationScore(
   bPrimary: MotivationKey | null,
 ): { motivationScore: number; sharedMotivations: MotivationKey[]; topSignalPoints: number } {
   const sharedMotivations = getMotivationOverlap(aMotivations, bMotivations)
-  const unionSize = new Set([...aMotivations, ...bMotivations]).size
-  const sharedPercent = unionSize === 0 ? 0 : Math.round((sharedMotivations.length / unionSize) * 100)
+  const totalSelections = aMotivations.length + bMotivations.length
+  const sharedPercent = totalSelections === 0 ? 0 : Math.round(((sharedMotivations.length * 2) / totalSelections) * 100)
 
   let topSignalPoints = 0
   if (aPrimary && bPrimary && aPrimary === bPrimary) {
-    topSignalPoints += 100
+    topSignalPoints += 50
   }
   if (aPrimary && bMotivations.includes(aPrimary)) {
-    topSignalPoints += 40
+    topSignalPoints += 25
   }
   if (bPrimary && aMotivations.includes(bPrimary)) {
-    topSignalPoints += 40
+    topSignalPoints += 25
   }
 
   const topSignalPercent = Math.round((topSignalPoints / MAX_MOTIVATION_SIGNAL_POINTS) * 100)
