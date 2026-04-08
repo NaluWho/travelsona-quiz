@@ -166,7 +166,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
             {traitDefinitions.map((trait) => {
               const mine = myScores[trait.key]
               const theirs = otherResult.scores[trait.key]
-              const diff = Math.abs(mine - theirs)
+              const diff = trait.key === 'initiative' ? Math.abs(mine + theirs) : Math.abs(mine - theirs)
               const isExpanded = expandedTrait === trait.key
               const narrative = getNarrative(trait.key, diff)
 
@@ -183,7 +183,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
                     <div>
                       <p className="font-semibold text-stone-900">{trait.label}</p>
                       <p className="text-xs text-stone-500 mt-1">
-                        You: {mine > 0 ? `+${mine}` : mine} | Friend: {theirs > 0 ? `+${theirs}` : theirs} | Difference: {diff}
+                        You: {mine > 0 ? `+${mine}` : mine} | Friend: {theirs > 0 ? `+${theirs}` : theirs} | Friction: {diff}
                       </p>
                     </div>
                     <span className="text-lg text-stone-400">{isExpanded ? '−' : '+'}</span>

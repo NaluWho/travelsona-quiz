@@ -85,10 +85,10 @@ export const compatibilityNarratives: Record<TraitKey, TraitNarrative> = {
 
   initiative: {
     very_close:
-      'You both have similar comfort levels with decision-making and planning. Whether you both love organizing or prefer someone else to take charge, you are the same. Two drivers may end up competing for control, but two passengers may never leave the driveway. As long as you\'re willing to step up or step back as needed, you can navigate this dynamic without resentment.',
-    moderate:
-      'One person naturally takes the lead while the other is content following. This can work beautifully; the leader researches and proposes, the follower enjoys the relief of not having to decide. As long as the follower occasionally shares preferences and the leader doesn\'t feel abandoned, this dynamic thrives.',
-    large:
       'One person controls every decision while the other is along for the ride. The leader may feel frustrated managing everything while the follower may feel resentful or invisible. Or the follower will feel unburdened by decisions while the leader feels in their natural element. This dynamic can either be very challenging or harmonious depending on each person\'s expectations of the other\'s contributions.',
+    moderate:
+      'You both tend to fall into the same leader or follower dynamic. For this pairing one or both of you may need to adjust to a new initiative level, either stepping up more if you\'re both followers, or stepping back more if you\'re both leaders. Luckily, both of you are flexible enough that adapting shouldn\'t cause major tension.',
+    large:
+      'You both have similar comfort levels with decision-making and planning. Whether you both love organizing or prefer someone else to take charge, you are the same. Two drivers may end up competing for control, but two passengers may never leave the driveway. As long as you\'re willing to step up or step back as needed, you can navigate this dynamic without resentment.',
   },
 }
