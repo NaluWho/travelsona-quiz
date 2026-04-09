@@ -114,7 +114,10 @@ export function QuizView({
         <p className="text-sm font-semibold uppercase tracking-[0.15em] text-teal-700">Travelsona Quiz</p>
         <h1 className="mt-2 text-3xl font-black uppercase tracking-tight text-stone-900">Who Are You In A Travel Group?</h1>
         <p className="mt-2 text-stone-600">
-          Section 1 covers personality traits. Sections 2 and 3 capture interests and motivations.
+          While going through these questions, think about how you would <i>ideally</i> travel whether or not you usually travel that way.
+          For example, if your travels are usually highly planned but you feel restricted by it, choose instead your ideal amount of pre-planning. 
+          <br />
+          There are no right or wrong answers, just be honest for the most accurate results.
         </p>
 
         <div className="mt-4">
