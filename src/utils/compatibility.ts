@@ -36,8 +36,8 @@ function getOverlap(a: InterestKey[], b: InterestKey[]): InterestKey[] {
 
 function calculateInterestScore(a: InterestKey[], b: InterestKey[], aDisinterests: InterestKey[], bDisinterests: InterestKey[]): { score: number; overlap: InterestKey[]; frictionScore: number } {
   const overlap = getOverlap(a, b)
-  const totalSelections = a.length + b.length
-  const commonScore = totalSelections === 0 ? 0 : Math.round(((overlap.length * 2) / totalSelections) * 100)
+  const unionSize = new Set([...a, ...b]).size
+  const commonScore = unionSize === 0 ? 0 : Math.round((overlap.length / unionSize) * 100)
 
   // Calculate friction: how many of each person's interests are disliked by the other
   const aFrictionCount = a.filter((interest) => bDisinterests.includes(interest)).length
