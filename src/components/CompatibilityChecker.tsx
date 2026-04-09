@@ -181,7 +181,18 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
                     className="w-full px-4 py-3 text-left hover:bg-stone-100 transition flex items-center justify-between"
                   >
                     <div>
-                      <p className="font-semibold text-stone-900">{trait.label}</p>
+                      <p className="font-semibold text-stone-900 flex items-center gap-2">
+                        {trait.label}
+                        {trait.key === 'initiative' && (
+                          <span
+                            title="For Initiative, friction is based on how far your combined scores are from 0 (|your score + your friend's score|)."
+                            aria-label="Initiative friction explanation"
+                            className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-stone-400 text-[10px] font-bold leading-none text-stone-600"
+                          >
+                            ?
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-stone-500 mt-1">
                         You: {mine > 0 ? `+${mine}` : mine} | Friend: {theirs > 0 ? `+${theirs}` : theirs} | Friction: {diff}
                       </p>
