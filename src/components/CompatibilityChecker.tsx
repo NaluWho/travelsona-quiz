@@ -65,7 +65,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
       return 'Low'
     }
 
-    if (diff <= 6) {
+    if (diff <= 4) {
       return 'Medium'
     }
 
