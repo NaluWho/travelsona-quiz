@@ -3,19 +3,51 @@ import { CompatibilityChecker } from './components/CompatibilityChecker'
 import { QuizView } from './components/QuizView'
 import { ResultSummary } from './components/ResultSummary'
 import { TraitRadarChart } from './components/TraitRadarChart'
+import { quizQuestions } from './data/questions'
 import type { InterestKey, MotivationKey, QuizResult } from './types/quiz'
-import { decodeResult, encodeResult } from './utils/encoding'
+import { decodeResult, encodeResult, decodeQuizState, encodeQuizState, quizStateFromResult } from './utils/encoding'
 
 function App() {
-  const [answers, setAnswers] = useState<Record<number, number>>({})
-  const [interests, setInterests] = useState<InterestKey[]>([])
-  const [disinterests, setDisinterests] = useState<InterestKey[]>([])
-  const [motivations, setMotivations] = useState<MotivationKey[]>([])
-  const [primaryMotivation, setPrimaryMotivation] = useState<MotivationKey | null>(null)
-  const [result, setResult] = useState<QuizResult | null>(() => {
-    const code = new URL(window.location.href).searchParams.get('r')
-    return code ? decodeResult(code) : null
-  })
+  const emptyQuizState = {
+    answers: {},
+    interests: [],
+    disinterests: [],
+    motivations: [],
+    primaryMotivation: null,
+  }
+
+  const initialState = useMemo(() => {
+    const url = new URL(window.location.href)
+    const resultCode = url.searchParams.get('r')
+    const mode = url.searchParams.get('mode')
+
+    if (resultCode) {
+      const decodedResult = decodeResult(resultCode)
+      if (decodedResult) {
+        if (mode === 'quiz') {
+          return { result: null, quiz: quizStateFromResult(decodedResult) }
+        }
+        return { result: decodedResult, quiz: emptyQuizState }
+      }
+    }
+
+    const quizCode = url.searchParams.get('q')
+    if (quizCode) {
+      const decodedQuizState = decodeQuizState(quizCode)
+      if (decodedQuizState) {
+        return { result: null, quiz: decodedQuizState }
+      }
+    }
+
+    return { result: null, quiz: emptyQuizState }
+  }, [])
+
+  const [answers, setAnswers] = useState<Record<number, number>>(initialState.quiz.answers)
+  const [interests, setInterests] = useState<InterestKey[]>(initialState.quiz.interests)
+  const [disinterests, setDisinterests] = useState<InterestKey[]>(initialState.quiz.disinterests)
+  const [motivations, setMotivations] = useState<MotivationKey[]>(initialState.quiz.motivations)
+  const [primaryMotivation, setPrimaryMotivation] = useState<MotivationKey | null>(initialState.quiz.primaryMotivation)
+  const [result, setResult] = useState<QuizResult | null>(initialState.result)
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
   const shareCode = useMemo(() => (result ? encodeResult(result) : ''), [result])
@@ -25,6 +57,8 @@ function App() {
     }
     const url = new URL(window.location.href)
     url.searchParams.set('r', shareCode)
+    url.searchParams.delete('q')
+    url.searchParams.delete('mode')
     return url.toString()
   }, [shareCode])
 
@@ -37,6 +71,8 @@ function App() {
     const code = encodeResult(nextResult)
     const url = new URL(window.location.href)
     url.searchParams.set('r', code)
+    url.searchParams.delete('q')
+    url.searchParams.delete('mode')
     window.history.replaceState({}, '', url)
   }
 
@@ -49,14 +85,32 @@ function App() {
   }
 
   function retakeQuiz() {
-    setAnswers({})
-    setInterests([])
-    setDisinterests([])
-    setMotivations([])
-    setPrimaryMotivation(null)
+    const hasFullAnswers = Object.keys(answers).length === quizQuestions.length
+    const nextQuizState = hasFullAnswers
+      ? { answers, interests, disinterests, motivations, primaryMotivation }
+      : result
+        ? quizStateFromResult(result)
+        : emptyQuizState
+
+    setAnswers(nextQuizState.answers)
+    setInterests(nextQuizState.interests)
+    setDisinterests(nextQuizState.disinterests)
+    setMotivations(nextQuizState.motivations)
+    setPrimaryMotivation(nextQuizState.primaryMotivation)
     setResult(null)
+
+    const quizCode = encodeQuizState(
+      nextQuizState.answers,
+      nextQuizState.interests,
+      nextQuizState.disinterests,
+      nextQuizState.motivations,
+      nextQuizState.primaryMotivation,
+    )
+
     const url = new URL(window.location.href)
     url.searchParams.delete('r')
+    url.searchParams.delete('mode')
+    url.searchParams.set('q', quizCode)
     window.history.replaceState({}, '', url)
   }
 
