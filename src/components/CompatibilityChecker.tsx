@@ -121,7 +121,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
 
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Shared Interests</p>
-            <p className="mt-1 text-sm text-stone-600">{compatibility.overlap.length} overlapping interests (Friction Score: {compatibility.frictionScore}%)</p>
+            <p className="mt-1 text-sm text-stone-600">{compatibility.overlap.length} overlapping interests (Friction: {100 - compatibility.frictionScore}%)</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {compatibility.overlap.length > 0 ? (
                 compatibility.overlap.map((interest) => (
@@ -137,29 +137,23 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
               )}
             </div>
 
-            {(myResult.disinterests.length > 0 || otherResult.disinterests.length > 0) && (
-              <div className="mt-3 rounded-lg border border-stone-200 bg-white p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Interest Friction</p>
-                <p className="mt-2 text-xs text-stone-600">
-                  {myResult.disinterests.length > 0 && (
-                    <span className="block">
-                      You avoid: {myResult.disinterests.map((d) => interestMap[d].label).join(', ')}
-                    </span>
-                  )}
-                  {otherResult.disinterests.length > 0 && (
-                    <span className="block">
-                      They avoid: {otherResult.disinterests.map((d) => interestMap[d].label).join(', ')}
-                    </span>
-                  )}
-                </p>
-              </div>
-            )}
+            <div className="mt-3 rounded-lg border border-stone-200 bg-white p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Disinterests</p>
+              <p className="mt-2 text-xs text-stone-600">
+                <span className="block">
+                  You avoid: {myResult.disinterests.length > 0 ? myResult.disinterests.map((d) => interestMap[d].label).join(', ') : 'Nothing'}
+                </span>
+                <span className="block">
+                  They avoid: {otherResult.disinterests.length > 0 ? otherResult.disinterests.map((d) => interestMap[d].label).join(', ') : 'Nothing'}
+                </span>
+              </p>
+            </div>
           </div>
 
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Travel Motivation Match</p>
             <p className="mt-1 text-sm text-stone-600">
-              {compatibility.sharedMotivations.length} shared motivations • Top Motivation Similarity: {compatibility.topSignalPoints}/100
+              {compatibility.sharedMotivations.length} shared motivations • Top Motivation Similarity: {compatibility.topSignalPoints}%
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {compatibility.sharedMotivations.length > 0 ? (
