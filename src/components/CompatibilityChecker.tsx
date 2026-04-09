@@ -60,6 +60,30 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
     setOtherResult(decoded)
   }
 
+  function getFrictionLabel(diff: number): 'Low' | 'Medium' | 'High' {
+    if (diff <= 2) {
+      return 'Low'
+    }
+
+    if (diff <= 6) {
+      return 'Medium'
+    }
+
+    return 'High'
+  }
+
+  function getFrictionBadgeClass(level: 'Low' | 'Medium' | 'High'): string {
+    if (level === 'Low') {
+      return 'border-emerald-200 bg-emerald-100 text-emerald-800'
+    }
+
+    if (level === 'Medium') {
+      return 'border-amber-200 bg-amber-100 text-amber-800'
+    }
+
+    return 'border-rose-200 bg-rose-100 text-rose-800'
+  }
+
   return (
     <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
       <h3 className="text-xl font-bold text-stone-900">Compatibility Check</h3>
@@ -167,6 +191,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
               const mine = myScores[trait.key]
               const theirs = otherResult.scores[trait.key]
               const diff = trait.key === 'initiative' ? Math.abs(mine + theirs) : Math.abs(mine - theirs)
+              const frictionLevel = getFrictionLabel(diff)
               const isExpanded = expandedTrait === trait.key
               const narrative = getNarrative(trait.key, diff)
 
@@ -194,7 +219,12 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
                         )}
                       </p>
                       <p className="text-xs text-stone-500 mt-1">
-                        You: {mine > 0 ? `+${mine}` : mine} | Friend: {theirs > 0 ? `+${theirs}` : theirs} | Friction: {diff}
+                        You: {mine > 0 ? `+${mine}` : mine} | Friend: {theirs > 0 ? `+${theirs}` : theirs} | Friction:{' '}
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] ${getFrictionBadgeClass(frictionLevel)}`}
+                        >
+                          {frictionLevel}
+                        </span>
                       </p>
                     </div>
                     <span className="text-lg text-stone-400">{isExpanded ? '−' : '+'}</span>
