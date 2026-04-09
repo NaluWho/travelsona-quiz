@@ -141,8 +141,12 @@ export function QuizView({
         />
       ))}
 
-      <article className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-teal-200 bg-teal-50/60 p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.15em] text-teal-700">Section 2</p>
+        <p className="mt-1 text-sm font-semibold text-stone-900">Travel Interests</p>
+      </section>
+
+      <article className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
         <h2 className="mt-2 text-lg font-semibold text-stone-900">What activities interest you while traveling?</h2>
         <p className="mt-2 text-sm text-stone-600">Select 3 to 5 options.</p>
 
@@ -178,7 +182,6 @@ export function QuizView({
       </article>
 
       <article className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-teal-700">Section 2 (Optional)</p>
         <h2 className="mt-2 text-lg font-semibold text-stone-900">What activities would you rather avoid while traveling?</h2>
         <p className="mt-2 text-sm text-stone-600">Select 0 to 5 options (optional).</p>
 
@@ -209,8 +212,12 @@ export function QuizView({
         </div>
       </article>
 
-      <article className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-teal-200 bg-teal-50/60 p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.15em] text-teal-700">Section 3</p>
+        <p className="mt-1 text-sm font-semibold text-stone-900">Travel Motivations</p>
+      </section>
+
+      <article className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
         <h2 className="mt-2 text-lg font-semibold text-stone-900">Why do you travel?</h2>
         <p className="mt-2 text-sm text-stone-600">Select 1 to 3 motivations, then mark your number one motivation.</p>
 
