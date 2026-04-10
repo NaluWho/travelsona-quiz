@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { interestMap } from '../data/interests'
 import { motivationMap } from '../data/motivations'
 import { TraitRadarChart } from './TraitRadarChart'
@@ -40,7 +40,8 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
   const [warning, setWarning] = useState<string | null>(null)
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([])
   const [activeView, setActiveView] = useState<'group' | string>('group')
-  const [visibleRadarMemberIds, setVisibleRadarMemberIds] = useState<string[]>([])
+  const [visibleRadarMemberIds, setVisibleRadarMemberIds] = useState<string[]>(['you'])
+  const [radarColorByMemberId, setRadarColorByMemberId] = useState<Record<string, number>>({ you: 0 })
 
   const myScores: TraitScores = myResult.scores
 
@@ -136,23 +137,58 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
     return reordered
   }, [groupPairwise.pairs])
 
+  function getFirstAvailableColor(usedColors: Set<number>): number {
+    for (let i = 0; i < RADAR_COLORS.length; i += 1) {
+      if (!usedColors.has(i)) {
+        return i
+      }
+    }
+    return 0
+  }
+
+  useEffect(() => {
+    setRadarColorByMemberId((current) => {
+      const next: Record<string, number> = {}
+      const usedColors = new Set<number>()
+
+      // Keep existing color assignments for members who remain visible.
+      for (const memberId of visibleRadarMemberIds) {
+        const existingColor = current[memberId]
+        if (typeof existingColor === 'number' && !usedColors.has(existingColor)) {
+          next[memberId] = existingColor
+          usedColors.add(existingColor)
+        }
+      }
+
+      // Assign first free color to newly visible members.
+      for (const memberId of visibleRadarMemberIds) {
+        if (typeof next[memberId] !== 'number') {
+          const colorIndex = getFirstAvailableColor(usedColors)
+          next[memberId] = colorIndex
+          usedColors.add(colorIndex)
+        }
+      }
+
+      return next
+    })
+  }, [visibleRadarMemberIds])
+
   const groupRadarMembers = useMemo(() => {
     const ordered = [
       { id: 'you', name: 'You', result: myResult },
       ...groupMembers.map((member) => ({ id: member.id, name: member.name, result: member.result })),
     ]
 
-    const selectedIds = visibleRadarMemberIds.length > 0
-      ? new Set(visibleRadarMemberIds)
-      : new Set(ordered.slice(0, Math.min(6, ordered.length)).map((member) => member.id))
-
+    const selectedIds = new Set(visibleRadarMemberIds)
     return ordered.filter((member) => selectedIds.has(member.id)).slice(0, 6)
   }, [groupMembers, myResult, visibleRadarMemberIds])
 
   const groupRadarOverlays = useMemo(() => {
-    return groupRadarMembers.map((member, index) => {
-      const color = RADAR_COLORS[index % RADAR_COLORS.length]
+    return groupRadarMembers.map((member) => {
+      const colorIndex = radarColorByMemberId[member.id] ?? 0
+      const color = RADAR_COLORS[colorIndex % RADAR_COLORS.length]
       return {
+        dataKey: `series_${member.id}`,
         label: member.name,
         scores: member.result.scores,
         fill: color.fill,
@@ -160,7 +196,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
         dot: color.dot,
       }
     })
-  }, [groupRadarMembers])
+  }, [groupRadarMembers, radarColorByMemberId])
 
   function handleCompare() {
     const code = extractCode(input)
@@ -187,14 +223,13 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
     setGroupMembers((current) => [...current, member])
     setActiveView(member.id)
     setVisibleRadarMemberIds((current) => {
-      const next = current.length === 0 ? ['you'] : current
-      if (next.includes(member.id)) {
-        return next
+      if (current.includes(member.id)) {
+        return current
       }
-      if (next.length < 6) {
-        return [...next, member.id]
+      if (current.length < 6) {
+        return [...current, member.id]
       }
-      return next
+      return current
     })
     setInput('')
     setNameInput('')
@@ -211,18 +246,17 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
 
   function toggleVisibleRadarMember(memberId: string) {
     setVisibleRadarMemberIds((current) => {
-      const seed = current.length === 0 ? ['you'] : current
-      if (seed.includes(memberId)) {
-        if (seed.length === 1 && seed[0] === 'you') {
-          return seed
+      if (current.includes(memberId)) {
+        if (current.length === 1 && current[0] === 'you') {
+          return current
         }
-        const next = seed.filter((id) => id !== memberId)
+        const next = current.filter((id) => id !== memberId)
         return next.length === 0 ? ['you'] : next
       }
-      if (seed.length >= 6) {
-        return seed
+      if (current.length >= 6) {
+        return current
       }
-      return [...seed, memberId]
+      return [...current, memberId]
     })
   }
 
@@ -357,7 +391,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
             <p className="mt-1 text-xs text-stone-600">Show up to 6 people at a time for readability.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {[{ id: 'you', name: 'You' }, ...groupMembers.map((member) => ({ id: member.id, name: member.name }))].map((member) => {
-                const visibleSet = new Set(visibleRadarMemberIds.length > 0 ? visibleRadarMemberIds : ['you', ...groupMembers.slice(0, 5).map((m) => m.id)])
+                const visibleSet = new Set(visibleRadarMemberIds)
                 const visible = visibleSet.has(member.id)
                 return (
                   <button

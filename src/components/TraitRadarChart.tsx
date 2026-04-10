@@ -10,6 +10,7 @@ import { traitDefinitions } from '../data/traits'
 import type { TraitScores } from '../types/quiz'
 
 type RadarOverlay = {
+  dataKey: string
   label: string
   scores: TraitScores
   fill: string
@@ -27,6 +28,7 @@ type TraitRadarChartProps = {
 export function TraitRadarChart({ scores, compareScores, compareLabel = 'Friend', overlays }: TraitRadarChartProps) {
   const overlaySeries = overlays ?? [
     {
+      dataKey: 'youScore',
       label: 'You',
       scores,
       fill: '#0d9488',
@@ -34,7 +36,7 @@ export function TraitRadarChart({ scores, compareScores, compareLabel = 'Friend'
       dot: '#115e59',
     },
     ...(compareScores
-      ? [{ label: compareLabel, scores: compareScores, fill: '#fda4af', stroke: '#e11d48', dot: '#e11d48' }]
+      ? [{ dataKey: 'friendScore', label: compareLabel, scores: compareScores, fill: '#fda4af', stroke: '#e11d48', dot: '#e11d48' }]
       : []),
   ]
 
@@ -42,8 +44,8 @@ export function TraitRadarChart({ scores, compareScores, compareLabel = 'Friend'
     trait: trait.label,
     // Recharts radar radius starts at 0, so shift -6..6 into 0..12.
     ...Object.fromEntries(
-      overlaySeries.map((overlay, index) => [
-        `series_${index}`,
+      overlaySeries.map((overlay) => [
+        overlay.dataKey,
         overlay.scores[trait.key] + 6,
       ]),
     ),
@@ -55,7 +57,7 @@ export function TraitRadarChart({ scores, compareScores, compareLabel = 'Friend'
       {overlaySeries.length > 1 && (
         <div className="mb-2 flex items-center gap-4 px-2 text-xs font-semibold uppercase tracking-[0.12em] text-stone-600">
           {overlaySeries.map((overlay) => (
-            <span key={overlay.label} className="inline-flex items-center gap-2">
+            <span key={overlay.dataKey} className="inline-flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: overlay.stroke }} />
               {overlay.label}
             </span>
@@ -77,12 +79,13 @@ export function TraitRadarChart({ scores, compareScores, compareLabel = 'Friend'
           />
           {overlaySeries.map((overlay, index) => (
             <Radar
-              key={`${overlay.label}-${index}`}
-              dataKey={`series_${index}`}
+              key={overlay.dataKey}
+              dataKey={overlay.dataKey}
               fill={overlay.fill}
               stroke={overlay.stroke}
               fillOpacity={index === 0 ? 0.35 : 0.18}
               dot={{ r: 3, fill: overlay.dot }}
+              isAnimationActive={false}
             />
           ))}
         </RadarChart>
