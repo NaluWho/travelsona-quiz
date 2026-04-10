@@ -12,39 +12,135 @@ type CompatibilityCheckerProps = {
   myResult: QuizResult
 }
 
+type GroupMember = {
+  id: string
+  name: string
+  result: QuizResult
+  code: string
+}
+
+const RADAR_COLORS = [
+  { fill: '#0d9488', stroke: '#0f766e', dot: '#115e59' },
+  { fill: '#fda4af', stroke: '#e11d48', dot: '#e11d48' },
+  { fill: '#c4b5fd', stroke: '#7c3aed', dot: '#6d28d9' },
+  { fill: '#93c5fd', stroke: '#2563eb', dot: '#1d4ed8' },
+  { fill: '#fdba74', stroke: '#ea580c', dot: '#c2410c' },
+  { fill: '#86efac', stroke: '#16a34a', dot: '#15803d' },
+  { fill: '#f9a8d4', stroke: '#db2777', dot: '#be185d' },
+  { fill: '#67e8f9', stroke: '#0891b2', dot: '#0e7490' },
+  { fill: '#fcd34d', stroke: '#ca8a04', dot: '#a16207' },
+  { fill: '#d8b4fe', stroke: '#9333ea', dot: '#7e22ce' },
+]
+
 export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
   const [input, setInput] = useState('')
+  const [nameInput, setNameInput] = useState('')
   const [expandedTrait, setExpandedTrait] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [otherResult, setOtherResult] = useState<QuizResult | null>(null)
+  const [warning, setWarning] = useState<string | null>(null)
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([])
+  const [activeView, setActiveView] = useState<'group' | string>('group')
+  const [visibleRadarMemberIds, setVisibleRadarMemberIds] = useState<string[]>([])
 
   const myScores: TraitScores = myResult.scores
 
-  const compatibility = useMemo(() => {
-    if (!otherResult) {
+  const activeMember = useMemo(
+    () => groupMembers.find((member) => member.id === activeView) ?? null,
+    [activeView, groupMembers],
+  )
+
+  const selectedCompatibility = useMemo(() => {
+    if (!activeMember) {
       return null
     }
 
     return calculateCompatibility(
       myScores,
-      otherResult.scores,
+      activeMember.result.scores,
       myResult.interests,
-      otherResult.interests,
+      activeMember.result.interests,
       myResult.disinterests,
-      otherResult.disinterests,
+      activeMember.result.disinterests,
       myResult.motivations,
-      otherResult.motivations,
+      activeMember.result.motivations,
       myResult.primaryMotivation,
-      otherResult.primaryMotivation,
+      activeMember.result.primaryMotivation,
     )
   }, [
+    activeMember,
     myResult.interests,
     myResult.disinterests,
     myResult.motivations,
     myResult.primaryMotivation,
     myScores,
-    otherResult,
   ])
+
+  const groupPairwise = useMemo(() => {
+    const people: Array<{ id: string; name: string; result: QuizResult }> = [
+      { id: 'you', name: 'You', result: myResult },
+      ...groupMembers.map((member) => ({ id: member.id, name: member.name, result: member.result })),
+    ]
+
+    const pairs: Array<{ id: string; aName: string; bName: string; score: number }> = []
+
+    for (let i = 0; i < people.length; i += 1) {
+      for (let j = i + 1; j < people.length; j += 1) {
+        const a = people[i]
+        const b = people[j]
+        const result = calculateCompatibility(
+          a.result.scores,
+          b.result.scores,
+          a.result.interests,
+          b.result.interests,
+          a.result.disinterests,
+          b.result.disinterests,
+          a.result.motivations,
+          b.result.motivations,
+          a.result.primaryMotivation,
+          b.result.primaryMotivation,
+        )
+
+        pairs.push({
+          id: `${a.id}-${b.id}`,
+          aName: a.name,
+          bName: b.name,
+          score: result.overall,
+        })
+      }
+    }
+
+    const average = pairs.length === 0
+      ? null
+      : Math.round(pairs.reduce((sum, pair) => sum + pair.score, 0) / pairs.length)
+
+    return { pairs, average }
+  }, [groupMembers, myResult])
+
+  const groupRadarMembers = useMemo(() => {
+    const ordered = [
+      { id: 'you', name: 'You', result: myResult },
+      ...groupMembers.map((member) => ({ id: member.id, name: member.name, result: member.result })),
+    ]
+
+    const selectedIds = visibleRadarMemberIds.length > 0
+      ? new Set(visibleRadarMemberIds)
+      : new Set(ordered.slice(0, Math.min(6, ordered.length)).map((member) => member.id))
+
+    return ordered.filter((member) => selectedIds.has(member.id)).slice(0, 6)
+  }, [groupMembers, myResult, visibleRadarMemberIds])
+
+  const groupRadarOverlays = useMemo(() => {
+    return groupRadarMembers.map((member, index) => {
+      const color = RADAR_COLORS[index % RADAR_COLORS.length]
+      return {
+        label: member.name,
+        scores: member.result.scores,
+        fill: color.fill,
+        stroke: color.stroke,
+        dot: color.dot,
+      }
+    })
+  }, [groupRadarMembers])
 
   function handleCompare() {
     const code = extractCode(input)
@@ -52,12 +148,62 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
 
     if (!decoded) {
       setError('Could not parse that share code. Paste either a full URL or just the code.')
-      setOtherResult(null)
       return
     }
 
+    const trimmedName = nameInput.trim()
+    const nextName = trimmedName || `Friend ${groupMembers.length + 1}`
+    const duplicateName = groupMembers.some((member) => member.name.toLowerCase() === nextName.toLowerCase())
+
+    const member: GroupMember = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: nextName,
+      result: decoded,
+      code,
+    }
+
     setError(null)
-    setOtherResult(decoded)
+    setWarning(duplicateName ? 'Name already exists in the group. Added anyway.' : null)
+    setGroupMembers((current) => [...current, member])
+    setActiveView(member.id)
+    setVisibleRadarMemberIds((current) => {
+      const next = current.length === 0 ? ['you'] : current
+      if (next.includes(member.id)) {
+        return next
+      }
+      if (next.length < 6) {
+        return [...next, member.id]
+      }
+      return next
+    })
+    setInput('')
+    setNameInput('')
+    setExpandedTrait(null)
+  }
+
+  function removeMember(memberId: string) {
+    setGroupMembers((current) => current.filter((member) => member.id !== memberId))
+    setVisibleRadarMemberIds((current) => current.filter((id) => id !== memberId))
+    if (activeView === memberId) {
+      setActiveView('group')
+    }
+  }
+
+  function toggleVisibleRadarMember(memberId: string) {
+    setVisibleRadarMemberIds((current) => {
+      const seed = current.length === 0 ? ['you'] : current
+      if (seed.includes(memberId)) {
+        if (seed.length === 1 && seed[0] === 'you') {
+          return seed
+        }
+        const next = seed.filter((id) => id !== memberId)
+        return next.length === 0 ? ['you'] : next
+      }
+      if (seed.length >= 6) {
+        return seed
+      }
+      return [...seed, memberId]
+    })
   }
 
   function getFrictionLabel(diff: number): 'Low' | 'Medium' | 'High' {
@@ -88,14 +234,20 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
     <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
       <h3 className="text-xl font-bold text-stone-900">Compatibility Check</h3>
       <p className="mt-2 text-sm text-stone-600">
-        Paste your friend&apos;s result URL or share code. Overall score uses 50% personality, 20% interests (shared + friction), and 30% motivations.
+        Add friend codes with optional names, then switch between one-on-one details or group view. Group score is the average of all unique pairs including you.
       </p>
 
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+      <div className="mt-4 grid gap-2 lg:grid-cols-[1fr_220px_auto]">
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
           placeholder="Paste a code or URL"
+          className="w-full rounded-xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
+        />
+        <input
+          value={nameInput}
+          onChange={(event) => setNameInput(event.target.value)}
+          placeholder="Optional name"
           className="w-full rounded-xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
         />
         <button
@@ -103,28 +255,126 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
           onClick={handleCompare}
           className="rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800"
         >
-          Compare
+          Add to Group
         </button>
       </div>
 
       {error && <p className="mt-2 text-sm font-medium text-rose-700">{error}</p>}
+      {warning && <p className="mt-2 text-sm font-medium text-amber-700">{warning}</p>}
 
-      {compatibility !== null && otherResult && (
+      {groupMembers.length > 0 && (
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveView('group')}
+            className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] ${
+              activeView === 'group'
+                ? 'border-teal-600 bg-teal-100 text-teal-900'
+                : 'border-stone-300 bg-white text-stone-700 hover:bg-stone-100'
+            }`}
+          >
+            Group
+          </button>
+          {groupMembers.map((member) => (
+            <div key={member.id} className="inline-flex items-center overflow-hidden rounded-full border border-stone-300">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveView(member.id)
+                  setExpandedTrait(null)
+                }}
+                className={`px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] ${
+                  activeView === member.id
+                    ? 'bg-teal-100 text-teal-900'
+                    : 'bg-white text-stone-700 hover:bg-stone-100'
+                }`}
+              >
+                {member.name}
+              </button>
+              <button
+                type="button"
+                onClick={() => removeMember(member.id)}
+                className="border-l border-stone-300 bg-white px-2 py-1 text-xs font-bold text-stone-500 hover:bg-rose-50 hover:text-rose-700"
+                aria-label={`Remove ${member.name}`}
+              >
+                x
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {groupMembers.length > 0 && activeView === 'group' && (
         <div className="mt-5 space-y-4">
           <div className="rounded-xl bg-teal-50 p-4 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Group Match Score</p>
+            <p className="text-4xl font-black text-teal-900">{groupPairwise.average ?? 'N/A'}%</p>
+            <p className="mt-2 text-xs text-teal-800">Average across {groupPairwise.pairs.length} unique pairings.</p>
+          </div>
+
+          <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Pair Scores</p>
+            <div className="mt-3 grid gap-2 md:grid-cols-2">
+              {groupPairwise.pairs.map((pair) => (
+                <div key={pair.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700">
+                  <span className="font-semibold text-stone-900">{pair.aName}</span> + <span className="font-semibold text-stone-900">{pair.bName}</span>
+                  <span className="float-right font-bold text-teal-800">{pair.score}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Group Profile Overlay</p>
+            <p className="mt-1 text-xs text-stone-600">Show up to 6 people at a time for readability.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[{ id: 'you', name: 'You' }, ...groupMembers.map((member) => ({ id: member.id, name: member.name }))].map((member) => {
+                const visibleSet = new Set(visibleRadarMemberIds.length > 0 ? visibleRadarMemberIds : ['you', ...groupMembers.slice(0, 5).map((m) => m.id)])
+                const visible = visibleSet.has(member.id)
+                return (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => toggleVisibleRadarMember(member.id)}
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] ${
+                      visible
+                        ? 'border-teal-600 bg-teal-100 text-teal-900'
+                        : 'border-stone-300 bg-white text-stone-700 hover:bg-stone-100'
+                    }`}
+                  >
+                    {member.name}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="mt-4">
+              <TraitRadarChart scores={myScores} overlays={groupRadarOverlays} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedCompatibility !== null && activeMember && activeView !== 'group' && (
+        <div className="mt-5 space-y-4">
+          <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Viewing</p>
+            <p className="mt-1 text-lg font-bold text-stone-900">{activeMember.name}</p>
+          </div>
+
+          <div className="rounded-xl bg-teal-50 p-4 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Match Score</p>
-            <p className="text-4xl font-black text-teal-900">{compatibility.overall}%</p>
+            <p className="text-4xl font-black text-teal-900">{selectedCompatibility.overall}%</p>
             <p className="mt-2 text-xs text-teal-800">
-              Personality: {compatibility.personality}% • Interests: {compatibility.interests}% • Motivations: {compatibility.motivations}%
+              Personality: {selectedCompatibility.personality}% • Interests: {selectedCompatibility.interests}% • Motivations: {selectedCompatibility.motivations}%
             </p>
           </div>
 
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Shared Interests</p>
-            <p className="mt-1 text-sm text-stone-600">{compatibility.overlap.length} overlapping interests (Friction: {100 - compatibility.frictionScore}%)</p>
+            <p className="mt-1 text-sm text-stone-600">{selectedCompatibility.overlap.length} overlapping interests (Friction: {100 - selectedCompatibility.frictionScore}%)</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {compatibility.overlap.length > 0 ? (
-                compatibility.overlap.map((interest) => (
+              {selectedCompatibility.overlap.length > 0 ? (
+                selectedCompatibility.overlap.map((interest) => (
                   <span
                     key={interest}
                     className="inline-flex items-center rounded-full border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-teal-800"
@@ -144,7 +394,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
                   You avoid: {myResult.disinterests.length > 0 ? myResult.disinterests.map((d) => interestMap[d].label).join(', ') : 'Nothing'}
                 </span>
                 <span className="block">
-                  They avoid: {otherResult.disinterests.length > 0 ? otherResult.disinterests.map((d) => interestMap[d].label).join(', ') : 'Nothing'}
+                  They avoid: {activeMember.result.disinterests.length > 0 ? activeMember.result.disinterests.map((d) => interestMap[d].label).join(', ') : 'Nothing'}
                 </span>
               </p>
             </div>
@@ -153,11 +403,11 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Travel Motivation Match</p>
             <p className="mt-1 text-sm text-stone-600">
-              {compatibility.sharedMotivations.length} shared motivations • Top Motivation Similarity: {compatibility.topSignalPoints}%
+              {selectedCompatibility.sharedMotivations.length} shared motivations • Top Motivation Similarity: {selectedCompatibility.topSignalPoints}%
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {compatibility.sharedMotivations.length > 0 ? (
-                compatibility.sharedMotivations.map((motivation) => (
+              {selectedCompatibility.sharedMotivations.length > 0 ? (
+                selectedCompatibility.sharedMotivations.map((motivation) => (
                   <span
                     key={motivation}
                     className="inline-flex items-center rounded-full border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-teal-800"
@@ -171,19 +421,19 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
             </div>
 
             <p className="mt-3 text-xs text-stone-600">
-              Your #1: {myResult.primaryMotivation ? motivationMap[myResult.primaryMotivation].label : 'Not set'} | Friend #1: {otherResult.primaryMotivation ? motivationMap[otherResult.primaryMotivation].label : 'Not set'}
+              Your #1: {myResult.primaryMotivation ? motivationMap[myResult.primaryMotivation].label : 'Not set'} | Friend #1: {activeMember.result.primaryMotivation ? motivationMap[activeMember.result.primaryMotivation].label : 'Not set'}
             </p>
           </div>
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Profile Overlay</p>
-            <TraitRadarChart scores={myScores} compareScores={otherResult.scores} />
+            <TraitRadarChart scores={myScores} compareScores={activeMember.result.scores} compareLabel={activeMember.name} />
           </div>
 
           <div className="space-y-3">
             {traitDefinitions.map((trait) => {
               const mine = myScores[trait.key]
-              const theirs = otherResult.scores[trait.key]
+              const theirs = activeMember.result.scores[trait.key]
               const diff = trait.key === 'initiative' ? Math.abs(mine + theirs) : Math.abs(mine - theirs)
               const frictionLevel = getFrictionLabel(diff)
               const isExpanded = expandedTrait === trait.key
