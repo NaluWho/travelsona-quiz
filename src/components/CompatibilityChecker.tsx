@@ -109,12 +109,32 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
       }
     }
 
+    pairs.sort((a, b) => b.score - a.score)
+
     const average = pairs.length === 0
       ? null
       : Math.round(pairs.reduce((sum, pair) => sum + pair.score, 0) / pairs.length)
 
     return { pairs, average }
   }, [groupMembers, myResult])
+
+  const groupPairwiseDesktopOrder = useMemo(() => {
+    const columns = 2
+    const rows = Math.ceil(groupPairwise.pairs.length / columns)
+    const reordered: Array<{ id: string; aName: string; bName: string; score: number }> = []
+
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < columns; col += 1) {
+        const index = col * rows + row
+        const pair = groupPairwise.pairs[index]
+        if (pair) {
+          reordered.push(pair)
+        }
+      }
+    }
+
+    return reordered
+  }, [groupPairwise.pairs])
 
   const groupRadarMembers = useMemo(() => {
     const ordered = [
@@ -314,9 +334,17 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
 
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Pair Scores</p>
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
+            <div className="mt-3 grid gap-2 md:hidden">
               {groupPairwise.pairs.map((pair) => (
                 <div key={pair.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700">
+                  <span className="font-semibold text-stone-900">{pair.aName}</span> + <span className="font-semibold text-stone-900">{pair.bName}</span>
+                  <span className="float-right font-bold text-teal-800">{pair.score}%</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 hidden gap-2 md:grid md:grid-cols-2">
+              {groupPairwiseDesktopOrder.map((pair) => (
+                <div key={`${pair.id}-desktop`} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700">
                   <span className="font-semibold text-stone-900">{pair.aName}</span> + <span className="font-semibold text-stone-900">{pair.bName}</span>
                   <span className="float-right font-bold text-teal-800">{pair.score}%</span>
                 </div>
