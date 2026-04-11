@@ -11,6 +11,7 @@ import { decodeShareCode } from '../utils/encoding'
 
 type CompatibilityCheckerProps = {
   myResult: QuizResult
+  initialFriendCode?: string | null
 }
 
 type GroupMember = {
@@ -33,7 +34,7 @@ const RADAR_COLORS = [
   { fill: '#d8b4fe', stroke: '#9333ea', dot: '#7e22ce' },
 ]
 
-export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
+export function CompatibilityChecker({ myResult, initialFriendCode }: CompatibilityCheckerProps) {
   const [input, setInput] = useState('')
   const [nameInput, setNameInput] = useState('')
   const [expandedTrait, setExpandedTrait] = useState<string | null>(null)
@@ -43,8 +44,29 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
   const [activeView, setActiveView] = useState<'group' | string>('group')
   const [visibleRadarMemberIds, setVisibleRadarMemberIds] = useState<string[]>(['you'])
   const [radarColorByMemberId, setRadarColorByMemberId] = useState<Record<string, number>>({ you: 0 })
+  const [friendCodeProcessed, setFriendCodeProcessed] = useState(false)
 
   const myScores: TraitScores = myResult.scores
+
+  // Auto-populate with friend code if provided
+  useEffect(() => {
+    if (initialFriendCode && !friendCodeProcessed && groupMembers.length === 0) {
+      const decoded = decodeShareCode(initialFriendCode)
+      if (decoded) {
+        const member: GroupMember = {
+          id: `friend-${Date.now()}`,
+          name: 'Friend',
+          result: decoded,
+          code: initialFriendCode,
+        }
+        setGroupMembers([member])
+        setActiveView(member.id)
+        setVisibleRadarMemberIds(['you', member.id])
+        setFriendCodeProcessed(true)
+        setError(null)
+      }
+    }
+  }, [initialFriendCode, friendCodeProcessed, groupMembers.length])
 
   const activeMember = useMemo(
     () => groupMembers.find((member) => member.id === activeView) ?? null,

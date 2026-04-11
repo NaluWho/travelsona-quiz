@@ -35,15 +35,16 @@ function App() {
     const url = new URL(window.location.href)
     const resultCode = url.searchParams.get('r')
     const mode = url.searchParams.get('mode')
+    const friendCode = url.searchParams.get('f')
 
     if (resultCode) {
       const decodedResult = decodeResult(resultCode)
       if (decodedResult) {
         if (mode === 'quiz') {
-          return { result: null, quiz: quizStateFromResult(decodedResult) }
+          return { result: null, quiz: quizStateFromResult(decodedResult), friendCode }
         }
 
-        return { result: decodedResult, quiz: EMPTY_QUIZ_STATE }
+        return { result: decodedResult, quiz: EMPTY_QUIZ_STATE, friendCode }
       }
     }
 
@@ -51,11 +52,11 @@ function App() {
     if (quizCode) {
       const decodedQuiz = decodeQuizState(quizCode)
       if (decodedQuiz) {
-        return { result: null, quiz: decodedQuiz }
+        return { result: null, quiz: decodedQuiz, friendCode }
       }
     }
 
-    return { result: null, quiz: EMPTY_QUIZ_STATE }
+    return { result: null, quiz: EMPTY_QUIZ_STATE, friendCode }
   }, [])
 
   const [answers, setAnswers] = useState<Record<number, number>>(initialState.quiz.answers)
@@ -65,6 +66,7 @@ function App() {
   const [primaryMotivation, setPrimaryMotivation] = useState<MotivationKey | null>(initialState.quiz.primaryMotivation)
   const [result, setResult] = useState<QuizResult | null>(initialState.result)
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [initialFriendCode] = useState<string | null>(initialState.friendCode ?? null)
 
   const encodedResult = useMemo(() => (result ? encodeResult(result) : ''), [result])
   const compactCode = useMemo(() => {
@@ -96,8 +98,21 @@ function App() {
     url.searchParams.delete('r')
     url.searchParams.delete('q')
     url.searchParams.delete('mode')
+    url.searchParams.delete('f')
     return url.toString()
   }, [])
+
+  const inviteFriendUrl = useMemo(() => {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('r')
+    url.searchParams.delete('q')
+    url.searchParams.delete('mode')
+    url.searchParams.delete('f')
+    if (compactCode) {
+      url.searchParams.set('f', compactCode)
+    }
+    return url.toString()
+  }, [compactCode])
 
   function setAnswer(questionId: number, score: number) {
     setAnswers((current) => ({ ...current, [questionId]: score }))
@@ -260,10 +275,22 @@ function App() {
               >
                 Retake Quiz
               </button>
+
+              <button
+                type="button"
+                onClick={() => copyText(inviteFriendUrl, 'inviteLink')}
+                className={`mt-3 w-full rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                  copiedField === 'inviteLink'
+                    ? 'bg-blue-600 text-white'
+                    : 'border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                }`}
+              >
+                {copiedField === 'inviteLink' ? 'Invite Link Copied' : 'Copy Invite Friend Link'}
+              </button>
             </aside>
           </section>
 
-          <CompatibilityChecker myResult={result} />
+          <CompatibilityChecker myResult={result} initialFriendCode={initialFriendCode} />
         </section>
       )}
     </main>
