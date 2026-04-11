@@ -7,6 +7,7 @@ import type { QuizResult, TraitScores } from '../types/quiz'
 import { calculateCompatibility } from '../utils/compatibility'
 import { decodeResult, extractCode } from '../utils/encoding'
 import { getNarrative } from '../data/compatibilityNarrative'
+import { decodeShareCode } from '../utils/encoding'
 
 type CompatibilityCheckerProps = {
   myResult: QuizResult
@@ -201,8 +202,10 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
   function handleCompare() {
     const code = extractCode(input)
     const decoded = decodeResult(code)
+    const decodedShare = !decoded ? decodeShareCode(code) : null
+    const finalDecoded = decoded ?? decodedShare
 
-    if (!decoded) {
+    if (!finalDecoded) {
       setError('Could not parse that share code. Paste either a full URL or just the code.')
       return
     }
@@ -214,7 +217,7 @@ export function CompatibilityChecker({ myResult }: CompatibilityCheckerProps) {
     const member: GroupMember = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       name: nextName,
-      result: decoded,
+      result: finalDecoded,
       code,
     }
 

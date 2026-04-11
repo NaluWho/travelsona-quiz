@@ -5,17 +5,32 @@ import { ResultSummary } from './components/ResultSummary'
 import { TraitRadarChart } from './components/TraitRadarChart'
 import { quizQuestions } from './data/questions'
 import type { InterestKey, MotivationKey, QuizResult } from './types/quiz'
-import { decodeResult, encodeResult, decodeQuizState, encodeQuizState, quizStateFromResult } from './utils/encoding'
+import {
+  decodeQuizState,
+  decodeResult,
+  encodeQuizState,
+  encodeResult,
+  encodeShareCode,
+  quizStateFromResult,
+} from './utils/encoding'
+
+type QuizState = {
+  answers: Record<number, number>
+  interests: InterestKey[]
+  disinterests: InterestKey[]
+  motivations: MotivationKey[]
+  primaryMotivation: MotivationKey | null
+}
+
+const EMPTY_QUIZ_STATE: QuizState = {
+  answers: {},
+  interests: [],
+  disinterests: [],
+  motivations: [],
+  primaryMotivation: null,
+}
 
 function App() {
-  const emptyQuizState = {
-    answers: {},
-    interests: [],
-    disinterests: [],
-    motivations: [],
-    primaryMotivation: null,
-  }
-
   const initialState = useMemo(() => {
     const url = new URL(window.location.href)
     const resultCode = url.searchParams.get('r')
@@ -27,19 +42,20 @@ function App() {
         if (mode === 'quiz') {
           return { result: null, quiz: quizStateFromResult(decodedResult) }
         }
-        return { result: decodedResult, quiz: emptyQuizState }
+
+        return { result: decodedResult, quiz: EMPTY_QUIZ_STATE }
       }
     }
 
     const quizCode = url.searchParams.get('q')
     if (quizCode) {
-      const decodedQuizState = decodeQuizState(quizCode)
-      if (decodedQuizState) {
-        return { result: null, quiz: decodedQuizState }
+      const decodedQuiz = decodeQuizState(quizCode)
+      if (decodedQuiz) {
+        return { result: null, quiz: decodedQuiz }
       }
     }
 
-    return { result: null, quiz: emptyQuizState }
+    return { result: null, quiz: EMPTY_QUIZ_STATE }
   }, [])
 
   const [answers, setAnswers] = useState<Record<number, number>>(initialState.quiz.answers)
@@ -50,17 +66,38 @@ function App() {
   const [result, setResult] = useState<QuizResult | null>(initialState.result)
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
-  const shareCode = useMemo(() => (result ? encodeResult(result) : ''), [result])
-  const shareUrl = useMemo(() => {
-    if (!shareCode) {
+  const encodedResult = useMemo(() => (result ? encodeResult(result) : ''), [result])
+  const compactCode = useMemo(() => {
+    if (!result) {
       return ''
     }
+
+    try {
+      return encodeShareCode(result)
+    } catch {
+      return ''
+    }
+  }, [result])
+
+  const resultUrl = useMemo(() => {
+    if (!encodedResult) {
+      return ''
+    }
+
     const url = new URL(window.location.href)
-    url.searchParams.set('r', shareCode)
+    url.searchParams.set('r', encodedResult)
     url.searchParams.delete('q')
     url.searchParams.delete('mode')
     return url.toString()
-  }, [shareCode])
+  }, [encodedResult])
+
+  const baseQuizUrl = useMemo(() => {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('r')
+    url.searchParams.delete('q')
+    url.searchParams.delete('mode')
+    return url.toString()
+  }, [])
 
   function setAnswer(questionId: number, score: number) {
     setAnswers((current) => ({ ...current, [questionId]: score }))
@@ -68,6 +105,7 @@ function App() {
 
   function handleFinished(nextResult: QuizResult) {
     setResult(nextResult)
+
     const code = encodeResult(nextResult)
     const url = new URL(window.location.href)
     url.searchParams.set('r', code)
@@ -90,7 +128,7 @@ function App() {
       ? { answers, interests, disinterests, motivations, primaryMotivation }
       : result
         ? quizStateFromResult(result)
-        : emptyQuizState
+        : EMPTY_QUIZ_STATE
 
     setAnswers(nextQuizState.answers)
     setInterests(nextQuizState.interests)
@@ -156,26 +194,26 @@ function App() {
             <aside className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
               <h3 className="text-xl font-bold text-stone-900">Share Result</h3>
               <p className="mt-2 text-sm text-stone-600">
-                This app does not store personal data. Your traits, interests, and motivations are encoded in this share value.
+                Share by URL for one-click viewing, or share a compact code to compare directly in this app.
               </p>
 
-              <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Share Code</label>
+              <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Compact Share Code</label>
               <div className="mt-2 flex gap-2">
                 <input
                   readOnly
-                  value={shareCode}
+                  value={compactCode}
                   className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-700"
                 />
                 <button
                   type="button"
-                  onClick={() => copyText(shareCode, 'code')}
-                  className={`rounded-xl flex items-center justify-center min-w-[75px] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
-                    copiedField === 'code'
+                  onClick={() => copyText(compactCode, 'compactCode')}
+                  className={`min-w-[88px] rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                    copiedField === 'compactCode'
                       ? 'bg-green-600 text-white'
                       : 'bg-stone-900 text-white hover:bg-stone-800'
                   }`}
                 >
-                  {copiedField === 'code' ? '✓ Copied' : 'Copy'}
+                  {copiedField === 'compactCode' ? 'Copied' : 'Copy'}
                 </button>
               </div>
 
@@ -183,21 +221,37 @@ function App() {
               <div className="mt-2 flex gap-2">
                 <input
                   readOnly
-                  value={shareUrl}
+                  value={resultUrl}
                   className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-700"
                 />
                 <button
                   type="button"
-                  onClick={() => copyText(shareUrl, 'url')}
-                  className={`rounded-xl flex items-center justify-center min-w-[75px] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                  onClick={() => copyText(resultUrl, 'url')}
+                  className={`min-w-[88px] rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
                     copiedField === 'url'
                       ? 'bg-green-600 text-white'
                       : 'bg-stone-900 text-white hover:bg-stone-800'
                   }`}
                 >
-                  {copiedField === 'url' ? '✓ Copied' : 'Copy'}
+                  {copiedField === 'url' ? 'Copied' : 'Copy'}
                 </button>
               </div>
+
+              <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Share Message</label>
+              <p className="mt-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs text-stone-700">
+                Take the Travel Compatibility Quiz: {baseQuizUrl} and compare with code: {compactCode}
+              </p>
+              <button
+                type="button"
+                onClick={() => copyText(`Take the Travel Compatibility Quiz: ${baseQuizUrl} and compare with code: ${compactCode}`, 'message')}
+                className={`mt-2 w-full rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                  copiedField === 'message'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-teal-700 text-white hover:bg-teal-800'
+                }`}
+              >
+                {copiedField === 'message' ? 'Copied' : 'Copy Message'}
+              </button>
 
               <button
                 type="button"

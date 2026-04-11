@@ -328,3 +328,143 @@ export function quizStateFromResult(result: QuizResult): {
     primaryMotivation: result.primaryMotivation,
   }
 }
+
+  const TRAIT_SCORE_MAP: Record<number, number> = {
+    '-6': 0,
+    '-4': 1,
+    '-2': 2,
+    '0': 3,
+    '2': 4,
+    '4': 5,
+    '6': 6,
+  }
+
+  const REVERSE_TRAIT_SCORE_MAP: Record<number, number> = {
+    0: -6,
+    1: -4,
+    2: -2,
+    3: 0,
+    4: 2,
+    5: 4,
+    6: 6,
+  }
+
+  const MOTIVATION_ORDER: MotivationKey[] = ['restoration', 'education', 'socialMedia', 'escapism', 'community', 'challenge']
+
+  export function encodeShareCode(result: QuizResult): string {
+      const bytes: number[] = [0, 0, 0, 0, 0, 0, 0]
+
+      // Pack trait scores into a 24-bit integer (8 traits × 3 bits each).
+      // This guarantees each emitted byte is in the valid 0..255 range for btoa.
+      const scoreValues = traitDefinitions.map((trait) => {
+        const mapped = TRAIT_SCORE_MAP[result.scores[trait.key]]
+        return typeof mapped === 'number' ? mapped : TRAIT_SCORE_MAP[0]
+      })
+
+      let packedScores = 0
+      for (let i = 0; i < scoreValues.length; i += 1) {
+        packedScores |= (scoreValues[i] & 0x7) << (i * 3)
+      }
+
+      bytes[0] = packedScores & 0xff
+      bytes[1] = (packedScores >> 8) & 0xff
+      bytes[2] = (packedScores >> 16) & 0xff
+
+    // Byte 3: interests as 8 bits
+    let interestByte = 0
+    travelInterests.forEach((interest, index) => {
+      if (result.interests.includes(interest.key)) {
+        interestByte |= 1 << index
+      }
+    })
+    bytes[3] = interestByte
+
+    // Byte 4: disinterests as 8 bits
+    let disinterestByte = 0
+    travelInterests.forEach((interest, index) => {
+      if (result.disinterests.includes(interest.key)) {
+        disinterestByte |= 1 << index
+      }
+    })
+    bytes[4] = disinterestByte
+
+    // Byte 5-6: motivations (6 bits) + primary motivation (3 bits)
+    let motivationByte = 0
+    MOTIVATION_ORDER.forEach((motivation, index) => {
+      if (result.motivations.includes(motivation)) {
+        motivationByte |= 1 << index
+      }
+    })
+    bytes[5] = motivationByte
+
+    // Primary motivation: 0-5 for each, or 6 for null
+    const primaryIndex = result.primaryMotivation
+      ? MOTIVATION_ORDER.indexOf(result.primaryMotivation)
+      : -1
+    const primaryValue = primaryIndex >= 0 ? primaryIndex : 6
+    bytes[6] = primaryValue & 0x7
+
+    // Convert to binary string and encode
+    const binaryString = String.fromCharCode(...bytes)
+    return toBase64Url(binaryString)
+  }
+
+  export function decodeShareCode(code: string): QuizResult | null {
+    try {
+      const binaryString = fromBase64Url(code)
+      const bytes = Array.from(binaryString).map((c) => c.charCodeAt(0))
+
+      if (bytes.length < 7) {
+        return null
+      }
+
+      // Unpack trait scores from first 3 bytes
+      const scores = {} as TraitScores
+      for (let i = 0; i < 8; i += 1) {
+        const byteIndex = Math.floor((i * 3) / 8)
+        const bitOffset = (i * 3) % 8
+        let value = (bytes[byteIndex] >> bitOffset) & 0x7
+
+        if (bitOffset + 3 > 8) {
+          value |= ((bytes[byteIndex + 1] ?? 0) & ((1 << (bitOffset + 3 - 8)) - 1)) << (8 - bitOffset)
+        }
+
+        scores[traitDefinitions[i].key] = REVERSE_TRAIT_SCORE_MAP[value] ?? 0
+      }
+
+      // Unpack interests from byte 3
+      const interests: InterestKey[] = []
+      const interestByte = bytes[3] ?? 0
+      travelInterests.forEach((interest, index) => {
+        if ((interestByte & (1 << index)) !== 0) {
+          interests.push(interest.key)
+        }
+      })
+
+      // Unpack disinterests from byte 4
+      const disinterests: InterestKey[] = []
+      const disinterestByte = bytes[4] ?? 0
+      travelInterests.forEach((interest, index) => {
+        if ((disinterestByte & (1 << index)) !== 0) {
+          disinterests.push(interest.key)
+        }
+      })
+
+      // Unpack motivations from byte 5
+      const motivations: MotivationKey[] = []
+      const motivationByte = bytes[5] ?? 0
+      MOTIVATION_ORDER.forEach((motivation, index) => {
+        if ((motivationByte & (1 << index)) !== 0) {
+          motivations.push(motivation)
+        }
+      })
+
+      // Unpack primary motivation from byte 6
+      const primaryValue = bytes[6] & 0x7
+      const primaryMotivation = primaryValue < 6 ? MOTIVATION_ORDER[primaryValue] : null
+
+      return { scores, interests, disinterests, motivations, primaryMotivation }
+    } catch {
+      return null
+    }
+  }
