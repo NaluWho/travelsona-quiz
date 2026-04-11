@@ -25,27 +25,27 @@ const ROLE_LABELS: Record<RoleKey, { label: string; coLabel: string; mission: st
   planner: {
     label: 'Planner',
     coLabel: 'Co-Planners',
-    mission: 'Own the itinerary, lock key bookings, and keep the trip moving with confidence.',
+    mission: 'Own the itinerary, lock key bookings, and keep the trip moving with confidence. (Traits: Structure + Initiative)',
   },
   scout: {
     label: 'Scout',
     coLabel: 'Co-Scouts',
-    mission: 'Hunt for standout experiences, hidden gems, and high-energy moments.',
+    mission: 'Hunt for standout experiences, hidden gems, and high-energy moments. (Traits: Adventure + Pace)',
   },
   connector: {
     label: 'Connector',
     coLabel: 'Co-Connectors',
-    mission: 'Keep group chemistry strong, read the room, and make sure everyone feels included.',
+    mission: 'Keep group chemistry strong, read the room, and make sure everyone feels included. (Traits: Social + Energy)',
   },
   anchor: {
     label: 'Anchor',
     coLabel: 'Co-Anchors',
-    mission: 'Protect budget and pacing so the group can last the whole trip without burnout.',
+    mission: 'Protect budget and pacing so the group can last the whole trip without burnout. (Traits: Budget + Pace)',
   },
   flex: {
     label: 'Flex',
     coLabel: 'Co-Flex',
-    mission: 'Bridge different travel styles and smooth conflicts when plans shift.',
+    mission: 'Bridge different travel styles and smooth conflicts when plans shift. (Traits: Most balanced overall profile)',
   },
 }
 

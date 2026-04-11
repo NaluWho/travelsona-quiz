@@ -477,7 +477,7 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Group Roles</p>
             <p className="mt-1 text-xs text-stone-600">
-              Based off your group's traits and interactions, here are the potential roles.
+              Based off your group's trait scores, each role is assigned to the strongest fit (or co-assigned on ties).
             </p>
 
             <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
