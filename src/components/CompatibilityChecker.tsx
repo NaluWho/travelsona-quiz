@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { interestMap } from '../data/interests'
+import { interestMap, travelInterests } from '../data/interests'
 import { motivationMap } from '../data/motivations'
 import { TraitRadarChart } from './TraitRadarChart'
 import { traitDefinitions } from '../data/traits'
@@ -175,6 +175,59 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
       : `${missingCount} role${missingCount > 1 ? 's' : ''} unassigned.`
 
     return { roleCards, coverage, recommendation }
+  }, [myResult, groupMembers])
+
+  const groupInterestSignals = useMemo(() => {
+    const people = [
+      { interests: myResult.interests, disinterests: myResult.disinterests },
+      ...groupMembers.map((member) => ({ interests: member.result.interests, disinterests: member.result.disinterests })),
+    ]
+
+    const scoreByInterest = travelInterests.reduce((acc, interest) => {
+      acc[interest.key] = 0
+      return acc
+    }, {} as Record<keyof typeof interestMap, number>)
+
+    people.forEach((person) => {
+      person.interests.forEach((interest) => {
+        scoreByInterest[interest] += 1
+      })
+
+      person.disinterests.forEach((interest) => {
+        scoreByInterest[interest] -= 1
+      })
+    })
+
+    const threshold = Math.floor(people.length / 2)
+
+    const ranked = travelInterests
+      .map((interest) => ({
+        key: interest.key,
+        label: interest.label,
+        score: scoreByInterest[interest.key],
+      }))
+      .sort((a, b) => b.score - a.score)
+
+    const groupInterests = ranked.filter((interest) => interest.score > threshold)
+    const mustAvoid = ranked.filter((interest) => interest.score < 0).sort((a, b) => a.score - b.score)
+
+    const topScore = groupInterests.length > 0 ? groupInterests[0].score : null
+    const mustDo =
+      topScore === null
+        ? []
+        : groupInterests.filter((interest) => interest.score === topScore)
+    const potentialInterests =
+      topScore === null
+        ? groupInterests
+        : groupInterests.filter((interest) => interest.score < topScore)
+
+    return {
+      threshold,
+      groupSize: people.length,
+      potentialInterests,
+      mustDo,
+      mustAvoid,
+    }
   }, [myResult, groupMembers])
 
   function getFirstAvailableColor(usedColors: Set<number>): number {
@@ -423,7 +476,7 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
                   <p className="mt-1 text-xs leading-relaxed text-stone-600">{card.mission}</p>
 
                   <p className="mt-2 text-sm font-semibold text-stone-900">
-                    {card.primaryNames.length > 0 ? card.primaryNames.join(', ') : 'None'}
+                    {card.primaryNames.length > 0 ? card.primaryNames.join(', ') : 'No One'}
                   </p>
 
                   {card.secondaryNames.length > 0 && (
@@ -434,6 +487,69 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
 
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Trip Planning Signals</p>
+            <p className="mt-1 text-xs text-stone-600">
+              Interest score = +1 per like, -1 per dislike. Group interest threshold is score &gt; {groupInterestSignals.threshold} (group size: {groupInterestSignals.groupSize}).
+            </p>
+
+            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">Must Do</p>
+                {groupInterestSignals.mustDo.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {groupInterestSignals.mustDo.map((interest) => (
+                      <span
+                        key={`must-do-${interest.key}`}
+                        className="inline-flex items-center rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-emerald-800"
+                      >
+                        {interest.label} ({interest.score})
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-emerald-800">No single must-do interest yet. Consider using the top group interests below.</p>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-rose-200 bg-rose-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-rose-700">Must Avoid</p>
+                {groupInterestSignals.mustAvoid.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {groupInterestSignals.mustAvoid.map((interest) => (
+                      <span
+                        key={`must-avoid-${interest.key}`}
+                        className="inline-flex items-center rounded-full border border-rose-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-rose-800"
+                      >
+                        {interest.label} ({interest.score})
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-rose-800">No hard avoid signals right now.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-3 rounded-lg border border-stone-200 bg-white p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">Potential Interests</p>
+              {groupInterestSignals.potentialInterests.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {groupInterestSignals.potentialInterests.map((interest) => (
+                    <span
+                      key={`potential-interest-${interest.key}`}
+                      className="inline-flex items-center rounded-full border border-teal-300 bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-teal-800"
+                    >
+                      {interest.label} ({interest.score})
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-stone-600">No potential interests beyond your must-do picks yet.</p>
+              )}
             </div>
           </div>
 
