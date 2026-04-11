@@ -12,6 +12,7 @@ export type GroupRoleCard = {
   key: RoleKey
   label: string
   coLabel: string
+  mission: string
   primaryNames: string[]
   secondaryNames: string[]
   primaryAffinity: number | null
@@ -19,12 +20,32 @@ export type GroupRoleCard = {
   source: 'threshold' | 'direction' | 'none'
 }
 
-const ROLE_LABELS: Record<RoleKey, { label: string; coLabel: string }> = {
-  planner: { label: 'Planner', coLabel: 'Co-Planners' },
-  scout: { label: 'Scout', coLabel: 'Co-Scouts' },
-  connector: { label: 'Connector', coLabel: 'Co-Connectors' },
-  anchor: { label: 'Anchor', coLabel: 'Co-Anchors' },
-  flex: { label: 'Flex', coLabel: 'Co-Flex' },
+const ROLE_LABELS: Record<RoleKey, { label: string; coLabel: string; mission: string }> = {
+  planner: {
+    label: 'Planner',
+    coLabel: 'Co-Planners',
+    mission: 'Own the itinerary, lock key bookings, and keep the trip moving with confidence.',
+  },
+  scout: {
+    label: 'Scout',
+    coLabel: 'Co-Scouts',
+    mission: 'Hunt for standout experiences, hidden gems, and high-energy moments.',
+  },
+  connector: {
+    label: 'Connector',
+    coLabel: 'Co-Connectors',
+    mission: 'Keep group chemistry strong, read the room, and make sure everyone feels included.',
+  },
+  anchor: {
+    label: 'Anchor',
+    coLabel: 'Co-Anchors',
+    mission: 'Protect budget and pacing so the group can last the whole trip without burnout.',
+  },
+  flex: {
+    label: 'Flex',
+    coLabel: 'Co-Flex',
+    mission: 'Bridge different travel styles and smooth conflicts when plans shift.',
+  },
 }
 
 const TRAIT_KEYS: Array<keyof TraitScores> = [
@@ -97,6 +118,7 @@ function buildRoleCard(role: Exclude<RoleKey, 'flex'>, candidates: RoleCandidate
       key: role,
       label: ROLE_LABELS[role].label,
       coLabel: ROLE_LABELS[role].coLabel,
+      mission: ROLE_LABELS[role].mission,
       primaryNames: [],
       secondaryNames: [],
       primaryAffinity: null,
@@ -127,6 +149,7 @@ function buildRoleCard(role: Exclude<RoleKey, 'flex'>, candidates: RoleCandidate
     key: role,
     label: ROLE_LABELS[role].label,
     coLabel: ROLE_LABELS[role].coLabel,
+    mission: ROLE_LABELS[role].mission,
     primaryNames,
     secondaryNames,
     primaryAffinity: topAffinity,
@@ -141,6 +164,7 @@ function buildFlexCard(candidates: RoleCandidate[]): GroupRoleCard {
       key: 'flex',
       label: ROLE_LABELS.flex.label,
       coLabel: ROLE_LABELS.flex.coLabel,
+      mission: ROLE_LABELS.flex.mission,
       primaryNames: [],
       secondaryNames: [],
       primaryAffinity: null,
@@ -181,6 +205,7 @@ function buildFlexCard(candidates: RoleCandidate[]): GroupRoleCard {
     key: 'flex',
     label: ROLE_LABELS.flex.label,
     coLabel: ROLE_LABELS.flex.coLabel,
+    mission: ROLE_LABELS.flex.mission,
     primaryNames,
     secondaryNames,
     primaryAffinity: topAffinity,

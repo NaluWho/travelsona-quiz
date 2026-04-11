@@ -420,6 +420,7 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
                   <p className="text-sm font-bold text-teal-800">
                     {card.primaryNames.length > 1 ? card.coLabel : card.label}
                   </p>
+                  <p className="mt-1 text-xs leading-relaxed text-stone-600">{card.mission}</p>
 
                   <p className="mt-2 text-sm font-semibold text-stone-900">
                     {card.primaryNames.length > 0 ? card.primaryNames.join(', ') : 'None'}
