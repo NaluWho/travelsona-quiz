@@ -8,6 +8,7 @@ import { calculateCompatibility } from '../utils/compatibility'
 import { decodeResult, extractCode } from '../utils/encoding'
 import { getNarrative } from '../data/compatibilityNarrative'
 import { decodeShareCode } from '../utils/encoding'
+import { buildGroupRoleCards, getRoleCoverage } from '../utils/groupRoles'
 
 type CompatibilityCheckerProps = {
   myResult: QuizResult
@@ -159,6 +160,22 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
 
     return reordered
   }, [groupPairwise.pairs])
+
+  const groupRoles = useMemo(() => {
+    const allMembers = [
+      { id: 'you', name: 'You', scores: myResult.scores },
+      ...groupMembers.map((m) => ({ id: m.id, name: m.name, scores: m.result.scores })),
+    ]
+
+    const roleCards = buildGroupRoleCards(allMembers)
+    const coverage = getRoleCoverage(roleCards)
+    const missingCount = roleCards.filter((card) => card.primaryNames.length === 0).length
+    const recommendation = missingCount === 0
+      ? 'All roles covered.'
+      : `${missingCount} role${missingCount > 1 ? 's' : ''} unassigned.`
+
+    return { roleCards, coverage, recommendation }
+  }, [myResult, groupMembers])
 
   function getFirstAvailableColor(usedColors: Set<number>): number {
     for (let i = 0; i < RADAR_COLORS.length; i += 1) {
@@ -389,6 +406,34 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Group Match Score</p>
             <p className="text-4xl font-black text-teal-900">{groupPairwise.average ?? 'N/A'}%</p>
             <p className="mt-2 text-xs text-teal-800">Average across {groupPairwise.pairs.length} unique pairings.</p>
+          </div>
+
+          {/* Group Dynamics / Roles */}
+          <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Group Roles & Dynamics</p>
+            <p className="mt-1 text-xs text-stone-600">Role coverage: {groupRoles.coverage}% • {groupRoles.recommendation}</p>
+
+            <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+              {groupRoles.roleCards.map((card) => (
+                <div key={card.key} className="rounded-lg border border-stone-200 bg-white p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">Role</p>
+                  <p className="text-sm font-bold text-teal-800">
+                    {card.primaryNames.length > 1 ? card.coLabel : card.label}
+                  </p>
+
+                  <p className="mt-2 text-sm font-semibold text-stone-900">
+                    {card.primaryNames.length > 0 ? card.primaryNames.join(', ') : 'None'}
+                  </p>
+
+                  {card.secondaryNames.length > 0 && (
+                    <p className="mt-1 text-xs text-stone-600">
+                      Secondary: {card.secondaryNames.join(', ')}
+                    </p>
+                  )}
+
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
