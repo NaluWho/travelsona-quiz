@@ -15,6 +15,7 @@ export type GroupRoleCard = {
   mission: string
   primaryNames: string[]
   secondaryNames: string[]
+  fitStrength: number | null
   primaryAffinity: number | null
   secondaryAffinity: number | null
   source: 'threshold' | 'direction' | 'none'
@@ -107,6 +108,10 @@ function directionPass(role: Exclude<RoleKey, 'flex'>, scores: TraitScores): boo
   return scores.budget < 0 && scores.pace < 0
 }
 
+function clampPercent(value: number): number {
+  return Math.max(0, Math.min(100, Math.round(value)))
+}
+
 function buildRoleCard(role: Exclude<RoleKey, 'flex'>, candidates: RoleCandidate[]): GroupRoleCard {
   const byThreshold = candidates.filter((candidate) => thresholdPass(role, candidate.scores))
   const byDirection = candidates.filter((candidate) => directionPass(role, candidate.scores))
@@ -121,6 +126,7 @@ function buildRoleCard(role: Exclude<RoleKey, 'flex'>, candidates: RoleCandidate
       mission: ROLE_LABELS[role].mission,
       primaryNames: [],
       secondaryNames: [],
+      fitStrength: null,
       primaryAffinity: null,
       secondaryAffinity: null,
       source,
@@ -152,6 +158,7 @@ function buildRoleCard(role: Exclude<RoleKey, 'flex'>, candidates: RoleCandidate
     mission: ROLE_LABELS[role].mission,
     primaryNames,
     secondaryNames,
+    fitStrength: clampPercent((topAffinity / 12) * 100),
     primaryAffinity: topAffinity,
     secondaryAffinity,
     source,
@@ -167,6 +174,7 @@ function buildFlexCard(candidates: RoleCandidate[]): GroupRoleCard {
       mission: ROLE_LABELS.flex.mission,
       primaryNames: [],
       secondaryNames: [],
+      fitStrength: null,
       primaryAffinity: null,
       secondaryAffinity: null,
       source: 'none',
@@ -191,6 +199,7 @@ function buildFlexCard(candidates: RoleCandidate[]): GroupRoleCard {
     .sort((a, b) => b.affinity - a.affinity)
 
   const topAffinity = ranked[0].affinity
+  const topDistance = -topAffinity
   const primaryNames = ranked.filter((entry) => entry.affinity === topAffinity).map((entry) => entry.name)
   const remaining = ranked.filter((entry) => entry.affinity < topAffinity)
 
@@ -208,6 +217,7 @@ function buildFlexCard(candidates: RoleCandidate[]): GroupRoleCard {
     mission: ROLE_LABELS.flex.mission,
     primaryNames,
     secondaryNames,
+    fitStrength: clampPercent((1 - topDistance / 96) * 100),
     primaryAffinity: topAffinity,
     secondaryAffinity,
     source: 'threshold',

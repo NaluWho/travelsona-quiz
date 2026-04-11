@@ -379,6 +379,18 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
     return 'border-rose-200 bg-rose-100 text-rose-800'
   }
 
+  function getFitTag(fitStrength: number): { label: 'High' | 'Medium' | 'Low'; className: string } {
+    if (fitStrength >= 67) {
+      return { label: 'High', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' }
+    }
+
+    if (fitStrength >= 34) {
+      return { label: 'Medium', className: 'border-amber-300 bg-amber-50 text-amber-800' }
+    }
+
+    return { label: 'Low', className: 'border-stone-300 bg-stone-100 text-stone-700' }
+  }
+
   return (
     <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
       <h3 className="text-xl font-bold text-stone-900">Compatibility Check</h3>
@@ -470,26 +482,38 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
 
             <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
               {groupRoles.roleCards.map((card) => (
-                <div key={card.key} className="rounded-lg border border-stone-200 bg-white p-3">
-                  <div className="grid grid-cols-3 items-start gap-3">
-                    <div className="col-span-1">
-                      <p className="text-sm font-bold text-teal-800">
-                        {card.primaryNames.length > 1 ? card.coLabel : card.label}
-                      </p>
-                    </div>
-                    <div className="col-span-2 text-right">
-                      <p className="text-sm font-extrabold text-stone-900">
-                        {card.primaryNames.length > 0 ? card.primaryNames.join(', ') : 'No One'}
-                      </p>
-                      {card.secondaryNames.length > 0 && (
-                        <p className="mt-1 text-xs text-stone-600">
-                          Secondary: {card.secondaryNames.join(', ')}
-                        </p>
-                      )}
-                    </div>
+                <div key={card.key} className="h-full rounded-lg border border-stone-200 bg-white p-3 flex flex-col">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-bold text-teal-800">
+                      {card.primaryNames.length > 1 ? card.coLabel : card.label}
+                    </p>
+                    {card.primaryNames.length > 1 && (
+                      <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-amber-800">
+                        Co-Role
+                      </span>
+                    )}
                   </div>
 
+                  <p className="mt-1 text-[1.3125rem] font-extrabold leading-tight text-stone-900">
+                    {card.primaryNames.length > 0 ? card.primaryNames.join(', ') : 'No One'}
+                  </p>
+
+                  {card.secondaryNames.length > 0 && (
+                    <p className="mt-1 text-xs text-stone-600">
+                      Secondary: {card.secondaryNames.join(', ')}
+                    </p>
+                  )}
+
                   <p className="mt-2 text-xs leading-relaxed text-stone-600">{card.mission}</p>
+
+                  {typeof card.fitStrength === 'number' && (
+                    <p className="mt-auto pt-3 text-xs text-stone-500">
+                      Fit Confidence:{' '}
+                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] ${getFitTag(card.fitStrength).className}`}>
+                        {getFitTag(card.fitStrength).label}
+                      </span>
+                    </p>
+                  )}
 
                 </div>
               ))}
