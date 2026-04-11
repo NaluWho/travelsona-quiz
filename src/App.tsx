@@ -68,7 +68,6 @@ function App() {
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [initialFriendCode] = useState<string | null>(initialState.friendCode ?? null)
 
-  const encodedResult = useMemo(() => (result ? encodeResult(result) : ''), [result])
   const compactCode = useMemo(() => {
     if (!result) {
       return ''
@@ -80,27 +79,6 @@ function App() {
       return ''
     }
   }, [result])
-
-  const resultUrl = useMemo(() => {
-    if (!encodedResult) {
-      return ''
-    }
-
-    const url = new URL(window.location.href)
-    url.searchParams.set('r', encodedResult)
-    url.searchParams.delete('q')
-    url.searchParams.delete('mode')
-    return url.toString()
-  }, [encodedResult])
-
-  const baseQuizUrl = useMemo(() => {
-    const url = new URL(window.location.href)
-    url.searchParams.delete('r')
-    url.searchParams.delete('q')
-    url.searchParams.delete('mode')
-    url.searchParams.delete('f')
-    return url.toString()
-  }, [])
 
   const inviteFriendUrl = useMemo(() => {
     const url = new URL(window.location.href)
@@ -209,10 +187,10 @@ function App() {
             <aside className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
               <h3 className="text-xl font-bold text-stone-900">Share Result</h3>
               <p className="mt-2 text-sm text-stone-600">
-                Share by URL for one-click viewing, or share a compact code to compare directly in this app.
+                Share the compact code to compare, or invite a friend with a pre-loaded link.
               </p>
 
-              <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Compact Share Code</label>
+              <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Share Code</label>
               <div className="mt-2 flex gap-2">
                 <input
                   readOnly
@@ -231,42 +209,6 @@ function App() {
                   {copiedField === 'compactCode' ? 'Copied' : 'Copy'}
                 </button>
               </div>
-
-              <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Share URL</label>
-              <div className="mt-2 flex gap-2">
-                <input
-                  readOnly
-                  value={resultUrl}
-                  className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-700"
-                />
-                <button
-                  type="button"
-                  onClick={() => copyText(resultUrl, 'url')}
-                  className={`min-w-[88px] rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
-                    copiedField === 'url'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-stone-900 text-white hover:bg-stone-800'
-                  }`}
-                >
-                  {copiedField === 'url' ? 'Copied' : 'Copy'}
-                </button>
-              </div>
-
-              <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Share Message</label>
-              <p className="mt-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs text-stone-700">
-                Take the Travel Compatibility Quiz: {baseQuizUrl} and compare with code: {compactCode}
-              </p>
-              <button
-                type="button"
-                onClick={() => copyText(`Take the Travel Compatibility Quiz: ${baseQuizUrl} and compare with code: ${compactCode}`, 'message')}
-                className={`mt-2 w-full rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
-                  copiedField === 'message'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-teal-700 text-white hover:bg-teal-800'
-                }`}
-              >
-                {copiedField === 'message' ? 'Copied' : 'Copy Message'}
-              </button>
 
               <button
                 type="button"
