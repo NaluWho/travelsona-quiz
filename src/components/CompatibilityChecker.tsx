@@ -463,27 +463,33 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
 
           {/* Group Dynamics / Roles */}
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Group Roles & Dynamics</p>
-            <p className="mt-1 text-xs text-stone-600">Role coverage: {groupRoles.coverage}% • {groupRoles.recommendation}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Group Roles</p>
+            <p className="mt-1 text-xs text-stone-600">
+              Based off your group's traits and interactions, here are the potential roles.
+            </p>
 
             <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
               {groupRoles.roleCards.map((card) => (
                 <div key={card.key} className="rounded-lg border border-stone-200 bg-white p-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">Role</p>
-                  <p className="text-sm font-bold text-teal-800">
-                    {card.primaryNames.length > 1 ? card.coLabel : card.label}
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-stone-600">{card.mission}</p>
+                  <div className="grid grid-cols-3 items-start gap-3">
+                    <div className="col-span-1">
+                      <p className="text-sm font-bold text-teal-800">
+                        {card.primaryNames.length > 1 ? card.coLabel : card.label}
+                      </p>
+                    </div>
+                    <div className="col-span-2 text-right">
+                      <p className="text-sm font-extrabold text-stone-900">
+                        {card.primaryNames.length > 0 ? card.primaryNames.join(', ') : 'No One'}
+                      </p>
+                      {card.secondaryNames.length > 0 && (
+                        <p className="mt-1 text-xs text-stone-600">
+                          Secondary: {card.secondaryNames.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-                  <p className="mt-2 text-sm font-semibold text-stone-900">
-                    {card.primaryNames.length > 0 ? card.primaryNames.join(', ') : 'No One'}
-                  </p>
-
-                  {card.secondaryNames.length > 0 && (
-                    <p className="mt-1 text-xs text-stone-600">
-                      Secondary: {card.secondaryNames.join(', ')}
-                    </p>
-                  )}
+                  <p className="mt-2 text-xs leading-relaxed text-stone-600">{card.mission}</p>
 
                 </div>
               ))}
@@ -491,9 +497,9 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
           </div>
 
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Trip Planning Signals</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Trip Planning Suggestions</p>
             <p className="mt-1 text-xs text-stone-600">
-              Interest score = +1 per like, -1 per dislike. Group interest threshold is score &gt; {groupInterestSignals.threshold} (group size: {groupInterestSignals.groupSize}).
+              Based off your group's interests you might consider prioritizing and avoiding certain activities.
             </p>
 
             <div className="mt-3 grid gap-3 lg:grid-cols-2">
