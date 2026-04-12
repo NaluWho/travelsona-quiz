@@ -148,11 +148,16 @@ function App() {
   return (
     <main className="mx-auto w-full max-w-5xl p-4 md:p-6">
       <header className="mb-6 rounded-3xl border border-teal-200 bg-gradient-to-r from-teal-100 via-amber-50 to-orange-100 p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-800">Travelsona</p>
-        <h1 className="mt-2 text-4xl font-black uppercase tracking-tight text-stone-900 md:text-5xl">Travel Compatibility Quiz</h1>
-        <p className="mt-3 max-w-3xl text-sm text-stone-700 md:text-base">
-          Uncover your travel personality across eight traits and discover how compatible you are with friends.
-        </p>
+        <a
+          href="https://naluwho.github.io/travelsona-quiz/"
+          className="block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+        >
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-800">Travelsona</p>
+          <h1 className="mt-2 text-4xl font-black uppercase tracking-tight text-stone-900 md:text-5xl">Travel Compatibility Quiz</h1>
+          <p className="mt-3 max-w-3xl text-sm text-stone-700 md:text-base">
+            Uncover your travel personality across eight traits and discover how compatible you are with friends.
+          </p>
+        </a>
       </header>
 
       {!result && (
@@ -235,6 +240,19 @@ function App() {
           <CompatibilityChecker myResult={result} initialFriendCode={initialFriendCode} />
         </section>
       )}
+
+      <footer className="mt-10 border-t border-stone-200 pt-4 text-center text-xs text-stone-500">
+        <span>Open source on </span>
+        <a
+          href="https://github.com/NaluWho/travelsona-quiz"
+          target="_blank"
+          rel="noreferrer noopener"
+          className="font-semibold text-teal-700 underline-offset-2 hover:text-teal-800 hover:underline"
+        >
+          GitHub
+        </a>
+        <span>.</span>
+      </footer>
     </main>
   )
 }
