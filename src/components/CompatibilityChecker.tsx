@@ -9,6 +9,7 @@ import { decodeResult, extractCode } from '../utils/encoding'
 import { getNarrative } from '../data/compatibilityNarrative'
 import { decodeShareCode } from '../utils/encoding'
 import { buildGroupRoleCards, getRoleCoverage } from '../utils/groupRoles'
+import { suggestSubgroups } from '../utils/subgroups'
 
 type CompatibilityCheckerProps = {
   myResult: QuizResult
@@ -20,6 +21,15 @@ type GroupMember = {
   name: string
   result: QuizResult
   code: string
+}
+
+type PairScoreCard = {
+  id: string
+  aId: string
+  bId: string
+  aName: string
+  bName: string
+  score: number
 }
 
 const RADAR_COLORS = [
@@ -100,18 +110,21 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
     myScores,
   ])
 
-  const groupPairwise = useMemo(() => {
-    const people: Array<{ id: string; name: string; result: QuizResult }> = [
+  const groupPeople = useMemo(
+    () => [
       { id: 'you', name: 'You', result: myResult },
       ...groupMembers.map((member) => ({ id: member.id, name: member.name, result: member.result })),
-    ]
+    ],
+    [groupMembers, myResult],
+  )
 
-    const pairs: Array<{ id: string; aName: string; bName: string; score: number }> = []
+  const groupPairwise = useMemo(() => {
+    const pairs: PairScoreCard[] = []
 
-    for (let i = 0; i < people.length; i += 1) {
-      for (let j = i + 1; j < people.length; j += 1) {
-        const a = people[i]
-        const b = people[j]
+    for (let i = 0; i < groupPeople.length; i += 1) {
+      for (let j = i + 1; j < groupPeople.length; j += 1) {
+        const a = groupPeople[i]
+        const b = groupPeople[j]
         const result = calculateCompatibility(
           a.result.scores,
           b.result.scores,
@@ -127,6 +140,8 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
 
         pairs.push({
           id: `${a.id}-${b.id}`,
+          aId: a.id,
+          bId: b.id,
           aName: a.name,
           bName: b.name,
           score: result.overall,
@@ -141,12 +156,27 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
       : Math.round(pairs.reduce((sum, pair) => sum + pair.score, 0) / pairs.length)
 
     return { pairs, average }
-  }, [groupMembers, myResult])
+  }, [groupPeople])
+
+  const subgroupSuggestion = useMemo(() => {
+    return suggestSubgroups(
+      groupPeople.map((person) => ({
+        id: person.id,
+        name: person.name,
+        socialScore: person.result.scores.social,
+      })),
+      groupPairwise.pairs.map((pair) => ({
+        aId: pair.aId,
+        bId: pair.bId,
+        score: pair.score,
+      })),
+    )
+  }, [groupPeople, groupPairwise.pairs])
 
   const groupPairwiseDesktopOrder = useMemo(() => {
     const columns = 2
     const rows = Math.ceil(groupPairwise.pairs.length / columns)
-    const reordered: Array<{ id: string; aName: string; bName: string; score: number }> = []
+    const reordered: PairScoreCard[] = []
 
     for (let row = 0; row < rows; row += 1) {
       for (let col = 0; col < columns; col += 1) {
@@ -629,6 +659,73 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
             <div className="mt-4">
               <TraitRadarChart scores={myScores} overlays={groupRadarOverlays} />
             </div>
+          </div>
+
+          <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Potential Subgroups</p>
+            <p className="mt-1 text-xs text-stone-600">
+              A graph partition over pair compatibility scores to identify subgroups that may travel well together.
+            </p>
+
+            {subgroupSuggestion && subgroupSuggestion.isMeaningful ? (
+              <>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-lg border border-stone-200 bg-white px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-500">Confidence</p>
+                    <p className="text-sm font-bold text-stone-900">{subgroupSuggestion.confidence}%</p>
+                  </div>
+                  <div className="rounded-lg border border-stone-200 bg-white px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-500">Within Cluster</p>
+                    <p className="text-sm font-bold text-emerald-700">{subgroupSuggestion.withinAverage}%</p>
+                  </div>
+                  <div className="rounded-lg border border-stone-200 bg-white px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-500">Across Clusters</p>
+                    <p className="text-sm font-bold text-rose-700">{subgroupSuggestion.crossAverage}%</p>
+                  </div>
+                  <div className="rounded-lg border border-stone-200 bg-white px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-500">Lift vs Group Avg</p>
+                    <p className="text-sm font-bold text-teal-800">+{subgroupSuggestion.improvement}%</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  {subgroupSuggestion.clusters.map((cluster, index) => (
+                    <article key={cluster.memberIds.join('-')} className="rounded-lg border border-teal-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-teal-700">Subgroup {String.fromCharCode(65 + index)}</p>
+                      <p className="mt-1 text-sm font-bold text-stone-900">{cluster.memberNames.join(', ')}</p>
+                      <p className="mt-2 text-xs text-stone-600">
+                        Internal average: {cluster.avgInternal}% | External average: {cluster.avgExternal}% | Cohesion: {cluster.cohesion > 0 ? `+${cluster.cohesion}` : cluster.cohesion}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+
+                {subgroupSuggestion.bridges.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-amber-700">Sub-Group Bridges</p>
+                    <p className="mt-1 text-xs text-amber-800">These people connect groups—nearly as compatible across group lines as within their assigned group.</p>
+                    <div className="mt-2 space-y-2">
+                      {subgroupSuggestion.bridges.map((bridge) => (
+                        <div key={bridge.id} className="flex items-center justify-between rounded-lg border border-amber-200 bg-white px-3 py-2">
+                          <p className="text-xs font-semibold text-amber-900">{bridge.name}</p>
+                          <div className="flex flex-wrap gap-2 justify-end">
+                            {bridge.clusterAffinities.map((affinity) => (
+                              <span key={`${bridge.id}-${affinity.clusterLabel}`} className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-amber-700">
+                                Subgroup {affinity.clusterLabel}: {affinity.affinity}%
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="mt-3 text-sm text-stone-600">
+                No high-confidence subgroup split yet. Add more members or look for stronger pair score separation.
+              </p>
+            )}
           </div>
         </div>
       )}
