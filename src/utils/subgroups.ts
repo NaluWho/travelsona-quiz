@@ -1,7 +1,6 @@
 export type SubgroupMember = {
   id: string
   name: string
-  socialScore: number
 }
 
 export type SubgroupPairScore = {
@@ -75,10 +74,6 @@ function getPairScore(lookup: Map<string, number>, aId: string, bId: string): nu
   }
 
   return lookup.get(toPairKey(aId, bId)) ?? 50
-}
-
-function isValidPartition(): boolean {
-  return true
 }
 
 function scorePartition(
@@ -230,10 +225,6 @@ export function suggestSubgroups(members: SubgroupMember[], pairs: SubgroupPairS
 
   for (let clusterCount = 2; clusterCount <= maxClusters; clusterCount += 1) {
     for (const assignments of generateAssignments(members.length, clusterCount)) {
-      if (!isValidPartition()) {
-        continue
-      }
-
       const scored = scorePartition(assignments, members, lookup)
       if (!best || scored.objective > best.objective) {
         best = scored

@@ -163,7 +163,6 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
       groupPeople.map((person) => ({
         id: person.id,
         name: person.name,
-        socialScore: person.result.scores.social,
       })),
       groupPairwise.pairs.map((pair) => ({
         aId: pair.aId,
@@ -661,11 +660,18 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
             </div>
           </div>
 
-          <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Potential Subgroups</p>
-            <p className="mt-1 text-xs text-stone-600">
-              A graph partition over pair compatibility scores to identify subgroups that may travel well together.
-            </p>
+          <details className="rounded-xl border border-amber-200 bg-amber-50/40">
+            <summary className="cursor-pointer list-none px-4 py-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-amber-800">Experimental Results</p>
+                <span className="rounded-full border border-amber-300 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-amber-700">Toggle</span>
+              </div>
+            </summary>
+            <div className="px-4 pb-4">
+              <p className="text-xs font-semibold tracking-[0.04em] text-stone-700">Potential subgroups</p>
+              <p className="mt-1 text-xs text-stone-600">
+                A graph partition over pair compatibility scores to identify subgroups that may travel well together.
+              </p>
 
             {subgroupSuggestion && subgroupSuggestion.isMeaningful ? (
               <>
@@ -726,7 +732,8 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
                 No high-confidence subgroup split yet. Add more members or look for stronger pair score separation.
               </p>
             )}
-          </div>
+            </div>
+          </details>
         </div>
       )}
 
