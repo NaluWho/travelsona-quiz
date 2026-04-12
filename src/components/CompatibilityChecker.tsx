@@ -614,19 +614,34 @@ export function CompatibilityChecker({ myResult, initialFriendCode }: Compatibil
 
           <div className="rounded-xl border border-stone-200 bg-stone-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">Pair Scores</p>
+            <p className="mt-1 text-xs text-stone-600">Sorted highest to lowest compatibility.</p>
             <div className="mt-3 grid gap-2 md:hidden">
               {groupPairwise.pairs.map((pair) => (
-                <div key={pair.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700">
-                  <span className="font-semibold text-stone-900">{pair.aName}</span> + <span className="font-semibold text-stone-900">{pair.bName}</span>
-                  <span className="float-right font-bold text-teal-800">{pair.score}%</span>
+                <div key={pair.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-700">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-stone-900">{pair.aName} + {pair.bName}</p>
+                    </div>
+                    <span className="text-sm font-black text-teal-800">{pair.score}%</span>
+                  </div>
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-stone-200">
+                    <div className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-500" style={{ width: `${pair.score}%` }} />
+                  </div>
                 </div>
               ))}
             </div>
             <div className="mt-3 hidden gap-2 md:grid md:grid-cols-2">
               {groupPairwiseDesktopOrder.map((pair) => (
-                <div key={`${pair.id}-desktop`} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700">
-                  <span className="font-semibold text-stone-900">{pair.aName}</span> + <span className="font-semibold text-stone-900">{pair.bName}</span>
-                  <span className="float-right font-bold text-teal-800">{pair.score}%</span>
+                <div key={`${pair.id}-desktop`} className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-700">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-stone-900">{pair.aName} + {pair.bName}</p>
+                    </div>
+                    <span className="text-sm font-black text-teal-800">{pair.score}%</span>
+                  </div>
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-stone-200">
+                    <div className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-500" style={{ width: `${pair.score}%` }} />
+                  </div>
                 </div>
               ))}
             </div>
