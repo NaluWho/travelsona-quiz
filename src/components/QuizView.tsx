@@ -46,6 +46,10 @@ export function QuizView({
   const progress = Math.round((progressSteps / totalSteps) * 100)
 
   function toggleInterest(interest: InterestKey) {
+    if (selectedDisinterests.includes(interest)) {
+      return
+    }
+
     if (selectedInterests.includes(interest)) {
       onInterestsChange(selectedInterests.filter((item) => item !== interest))
       return
@@ -59,6 +63,10 @@ export function QuizView({
   }
 
   function toggleDisinterest(interest: InterestKey) {
+    if (selectedInterests.includes(interest)) {
+      return
+    }
+
     if (selectedDisinterests.includes(interest)) {
       onDisinterestsChange(selectedDisinterests.filter((item) => item !== interest))
       return
@@ -98,11 +106,13 @@ export function QuizView({
   }
 
   function submitQuiz() {
+    const sanitizedDisinterests = selectedDisinterests.filter((interest) => !selectedInterests.includes(interest))
+
     const scores = scoreQuiz(answers, quizQuestions)
     onFinished({
       scores,
       interests: selectedInterests,
-      disinterests: selectedDisinterests,
+      disinterests: sanitizedDisinterests,
       motivations: selectedMotivations,
       primaryMotivation: selectedMotivations.length === 1 ? selectedMotivations[0] : primaryMotivation,
     })
@@ -156,7 +166,8 @@ export function QuizView({
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {travelInterests.map((interest) => {
             const selected = selectedInterests.includes(interest.key)
-            const disabled = !selected && selectedInterests.length >= 5
+            const blockedByDisinterest = selectedDisinterests.includes(interest.key)
+            const disabled = blockedByDisinterest || (!selected && selectedInterests.length >= 5)
 
             return (
               <button
@@ -168,11 +179,20 @@ export function QuizView({
                   selected
                     ? 'border-teal-700 bg-teal-50 text-teal-900'
                     : disabled
-                      ? 'cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400'
+                      ? blockedByDisinterest
+                        ? 'cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400'
+                        : 'cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400'
                       : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-teal-400 hover:bg-teal-50/60'
                 }`}
               >
-                <p className="font-semibold">{interest.label}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-semibold">{interest.label}</p>
+                  {blockedByDisinterest && (
+                    <span className="rounded-full border border-stone-300 bg-stone-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-stone-600">
+                      Disinterest
+                    </span>
+                  )}
+                </div>
                 <p className="mt-1 text-sm">{interest.description}</p>
               </button>
             )
@@ -187,11 +207,13 @@ export function QuizView({
       <article className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
         <h2 className="mt-2 text-lg font-semibold text-stone-900">What activities would you rather avoid while traveling?</h2>
         <p className="mt-2 text-sm text-stone-600">Select 0 to 5 options (optional).</p>
+        <p className="mt-1 text-xs text-stone-500">You cannot mark an activity as avoid if it is already selected as an interest.</p>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {travelInterests.map((interest) => {
             const selected = selectedDisinterests.includes(interest.key)
-            const disabled = !selected && selectedDisinterests.length >= 5
+            const blockedByInterest = selectedInterests.includes(interest.key)
+            const disabled = blockedByInterest || (!selected && selectedDisinterests.length >= 5)
 
             return (
               <button
@@ -203,11 +225,20 @@ export function QuizView({
                   selected
                     ? 'border-rose-700 bg-rose-50 text-rose-900'
                     : disabled
-                      ? 'cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400'
+                      ? blockedByInterest
+                        ? 'cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400'
+                        : 'cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400'
                       : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-rose-400 hover:bg-rose-50/60'
                 }`}
               >
-                <p className="font-semibold">{interest.label}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-semibold">{interest.label}</p>
+                  {blockedByInterest && (
+                    <span className="rounded-full border border-stone-300 bg-stone-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-stone-600">
+                      Interest
+                    </span>
+                  )}
+                </div>
                 <p className="mt-1 text-sm">{interest.description}</p>
               </button>
             )
