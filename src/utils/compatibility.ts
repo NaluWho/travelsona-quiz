@@ -10,9 +10,9 @@ const SAME_DIRECTION_TRAITS: TraitKey[] = [
   'social',
 ]
 
-const PERSONALITY_WEIGHT = 0.6
+const PERSONALITY_WEIGHT = 0.55
 const INTEREST_WEIGHT = 0.3
-const MOTIVATION_WEIGHT = 0.1
+const MOTIVATION_WEIGHT = 0.15
 const MAX_MOTIVATION_SIGNAL_POINTS = 100
 
 function clampPercentage(value: number): number {
